@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>sIgNaL 取引管理</title>
+<meta name="description" content="株式会社sIgNaL 社内用 取引管理">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#1f3a5f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="sIgNaL取引">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<style>[hidden]{display:none!important}html,body{margin:0}body{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Shippori+Mincho:wght@500;700&display=swap">
+<style>
+/* Layout: 上部バー＋ナビ、本文は1カラム。案件詳細は「工程ステッパー → 工程パネル」。書類は紙面プレビュー */
+:root{
+  --bg:#f2f4f7; --surface:#ffffff; --surface2:#f7f9fb; --ink:#16233a; --muted:#5a6679; --line:#dce2ea;
+  --navy:#1f3a5f; --navy-mid:#7f9cc2; --navy-soft:#e3eaf3; --stamp:#c03a22;
+  --ok:#2c7a4b; --ok-soft:#e1f1e7; --warn:#a86a10; --warn-soft:#fbefd9; --bad:#b93a2c; --bad-soft:#f9e2df;
+  --paper:#fffefb; --paper-ink:#1d1d1d; --paper-line:#bfb9ae;
+  --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  --f-doc:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --surface:#171f2a; --surface2:#1c2633; --ink:#e4e9f0; --muted:#97a3b4; --line:#2a3544;
+  --navy:#93b6e0; --navy-mid:#4d6a92; --navy-soft:#22324a; --stamp:#e0634a;
+  --ok:#6cc596; --ok-soft:#183324; --warn:#e3b058; --warn-soft:#352812; --bad:#ef8576; --bad-soft:#3a1d19;
+  --paper:#f6f3ec; --paper-ink:#1d1d1d; --paper-line:#bfb9ae; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --surface:#171f2a; --surface2:#1c2633; --ink:#e4e9f0; --muted:#97a3b4; --line:#2a3544;
+  --navy:#93b6e0; --navy-mid:#4d6a92; --navy-soft:#22324a; --stamp:#e0634a;
+  --ok:#6cc596; --ok-soft:#183324; --warn:#e3b058; --warn-soft:#352812; --bad:#ef8576; --bad-soft:#3a1d19;
+  --paper:#f6f3ec; --paper-ink:#1d1d1d; --paper-line:#bfb9ae; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.65;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.topin{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand b{font-family:var(--f-doc);font-size:20px;letter-spacing:.02em}
+.brand span{font-size:12px;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+nav.tabs button{background:none;border:0;padding:6px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font-weight:500}
+nav.tabs button[aria-current="true"]{background:var(--navy-soft);color:var(--navy)}
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:6px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--navy)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:var(--surface)}
+.btn.sm{padding:4px 10px;font-size:12.5px}
+.btn:focus-visible,nav.tabs button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+.demo-band{background:var(--warn-soft);color:var(--warn);font-size:12.5px;padding-block:6px}
+main{padding-block:22px 60px;display:grid;gap:20px}
+h1{font-size:22px;margin:0;text-wrap:balance;font-weight:700}
+h2{font-size:16px;margin:0 0 12px;font-weight:700}
+h3{font-size:14px;margin:0 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.kpi .v{font-size:24px;font-weight:700;margin-top:2px}
+.kpi .s{font-size:12px;color:var(--muted)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--surface2)}
+.pill{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:99px;background:var(--navy-soft);color:var(--navy);white-space:nowrap;font-weight:500}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.alerts{display:grid;gap:8px}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);font-size:13px}
+.alert.warn{background:var(--warn-soft);border-color:transparent} .alert.bad{background:var(--bad-soft);border-color:transparent}
+.alert .t{flex:1;min-width:0}
+/* bars */
+.bars{display:grid;gap:14px;align-items:end;height:190px;padding-top:10px;border-bottom:1px solid var(--line)}
+.bar{display:flex;flex-direction:column;justify-content:flex-end;height:100%;gap:0;position:relative}
+.bar .seg{border-radius:3px 3px 0 0}
+.bar .seg{border-radius:0} .bar .seg:nth-child(2){border-radius:3px 3px 0 0}
+.bar .c,.lg.c{background:var(--navy)} .bar .k,.lg.k{background:var(--navy-mid)} .bar .y,.lg.y{background:var(--navy-soft);border:1px dashed var(--navy)}
+.bar .y{border-bottom:0}
+.bar .val{font-size:11.5px;text-align:center;margin-bottom:4px;color:var(--muted)}
+.barlbl{display:grid;gap:14px;font-size:12px;color:var(--muted);text-align:center;padding-top:6px}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* stepper */
+.stepper{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;counter-reset:s}
+.step{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;cursor:pointer;text-align:left;min-width:0}
+.step .n{font-size:11px;color:var(--muted)}
+.step .lb{font-weight:700;font-size:13px}
+.step.done{background:var(--ok-soft);border-color:transparent} .step.done .n{color:var(--ok)}
+.step.cur{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.step.sel{background:var(--navy-soft)}
+.step:disabled{opacity:.5;cursor:default}
+@media (max-width:760px){.stepper{grid-template-columns:repeat(3,1fr)}}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2px 20px;margin:0}
+.facts div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:5px 0;min-width:0}
+.facts dt{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.facts dd{margin:0;text-align:right;font-weight:500;min-width:0;overflow-wrap:anywhere}
+/* checklist */
+.checklist{display:grid;gap:6px}
+.ck{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.ck .no{font-family:var(--f-doc);font-size:17px;color:var(--muted);text-align:center}
+.ck.has{background:var(--ok-soft);border-color:transparent} .ck.has .no{color:var(--ok)}
+.ck.miss{border-color:var(--bad)}
+.ck .nm{font-weight:500} .ck .fn{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.ck label.btn{display:inline-block}
+.ck input[type=file]{position:absolute;width:1px;height:1px;opacity:0}
+/* form */
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 18px}
+.fld{display:grid;gap:4px;min-width:0}
+.fld label{font-size:12.5px;color:var(--muted)}
+.fld input,.fld select,.fld textarea{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 10px;width:100%;min-width:0}
+.fld label.chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink);cursor:pointer;width:max-content;max-width:100%;margin-top:2px}
+.fld label.chk input{width:16px;height:16px;padding:0;margin:0;flex:none;accent-color:var(--navy)}
+.unit{position:relative} .unit input{padding-right:34px} .unit span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12.5px}
+.fld.wide{grid-column:1/-1}
+.seg-ctl{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;overflow:hidden;width:max-content;max-width:100%}
+.seg-ctl label{padding:6px 12px;cursor:pointer;font-size:13px;color:var(--ink);border-right:1px solid var(--line)}
+.seg-ctl label:last-child{border-right:0}
+.seg-ctl input{position:absolute;opacity:0;width:1px;height:1px}
+.seg-ctl input:checked+span{color:var(--navy);font-weight:700}
+.seg-ctl label:has(input:checked){background:var(--navy-soft)}
+.calc{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:13px}
+.calc b{font-size:18px}
+/* doc tabs & paper */
+.doctabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.doctabs button{border:1px solid var(--line);background:var(--surface);padding:5px 12px;border-radius:99px;cursor:pointer;font-size:13px}
+.doctabs button[aria-pressed="true"]{background:var(--navy);color:var(--surface);border-color:var(--navy)}
+.paperwrap{overflow-x:auto;background:var(--surface2);border-radius:8px;padding:18px}
+.paper{background:var(--paper);color:var(--paper-ink);font-family:var(--f-doc);width:620px;max-width:none;margin:0 auto;padding:40px 44px;box-shadow:0 1px 3px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.06);position:relative;font-size:13.5px;line-height:1.8}
+.paper h4{font-size:22px;text-align:center;letter-spacing:.5em;margin:0 0 24px;font-weight:700}
+.paper .to{font-size:16px;border-bottom:1px solid var(--paper-ink);display:inline-block;padding:0 30px 2px 0;margin-bottom:16px}
+.paper .amt{font-size:26px;border:1.5px solid var(--paper-ink);padding:8px 16px;text-align:center;margin:12px 0;letter-spacing:.06em}
+.paper table{font-size:13px}
+.paper th,.paper td{border:1px solid var(--paper-line);color:var(--paper-ink);padding:6px 9px;font-weight:400}
+.paper th{background:rgba(0,0,0,.035);font-size:12.5px}
+.paper .iss{margin-top:26px;text-align:right;line-height:1.7;font-size:12.5px}
+.paper .hanko{position:absolute;right:44px;bottom:40px;width:56px;height:56px;border:2px solid #c03a22;color:#c03a22;border-radius:6px;display:grid;place-items:center;font-size:12px;line-height:1.15;text-align:center;transform:rotate(-4deg);opacity:.85}
+.paper .note{font-size:11.5px;margin-top:14px}
+.paper .tot td{font-weight:700}
+/* folder */
+.tree{font-size:13.5px;display:grid;gap:3px}
+.tree .f{display:flex;gap:8px;align-items:center;padding:4px 8px;border-radius:6px;min-width:0}
+.tree .f.miss{background:var(--bad-soft);color:var(--bad)}
+.tree .f span.name{overflow-wrap:anywhere;min-width:0}
+.ico{width:16px;height:16px;flex:none}
+/* スマホ表示 */
+@media (max-width:640px){
+  header.top{position:static}
+  .topin{gap:10px}
+  .brand span{display:none}
+  nav.tabs{order:3;flex:0 0 100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav.tabs button{white-space:nowrap;padding:8px 12px}
+  .topin>label{order:2;flex:1;min-width:0} .rolesel{max-width:100%}
+  main{padding-block:16px 48px;gap:14px}
+  h1{font-size:19px}
+  .panel{padding:14px}
+  .kpis{grid-template-columns:1fr 1fr;gap:8px}
+  .kpi{padding:10px 12px} .kpi .v{font-size:18px} .kpi .l,.kpi .s{font-size:11px}
+  .grid2{grid-template-columns:1fr!important}
+  .btn{padding:9px 14px} .btn.sm{padding:6px 10px}
+  table.cards thead{display:none}
+  table.cards,table.cards tbody,table.cards tr,table.cards td{display:block;width:100%}
+  table.cards tr{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:8px;background:var(--surface)}
+  table.cards td{border:0;padding:3px 0;display:flex;justify-content:space-between;align-items:baseline;gap:12px;text-align:right}
+  table.cards td::before{content:attr(data-l);color:var(--muted);font-size:12px;text-align:left;flex:none}
+  table.cards td.ttl{display:block;text-align:left;padding-bottom:6px;margin-bottom:4px;border-bottom:1px dotted var(--line)}
+  table.cards td.ttl::before{content:none}
+  table.cards td[colspan]{display:block;text-align:left} table.cards td[colspan]::before{content:none}
+  .ck{grid-template-columns:24px 1fr;}
+  .ck label.btn{grid-column:2;justify-self:start}
+  .paperwrap{padding:10px}
+  .paper{zoom:.56}
+}
+.login{max-width:380px;margin:60px auto;display:grid;gap:12px}
+.busy{position:fixed;inset:0;background:rgba(0,0,0,.25);display:grid;place-items:center;z-index:30}
+.busy div{background:var(--surface);padding:14px 22px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+a.lnk{color:var(--navy)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;font-size:13px;z-index:20;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.note-box{border-left:3px solid var(--navy);background:var(--surface2);padding:10px 14px;font-size:12.5px;color:var(--muted);border-radius:0 6px 6px 0}
+.rolesel{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 8px;margin-left:4px}
+.inline-edit{width:70px;border:1px solid var(--line);border-radius:5px;padding:3px 6px;background:var(--surface);text-align:right}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .25s ease}@keyframes up{from{transform:translate(-50%,10px);opacity:0}}}
+</style>
+
+<header class="top">
+  <div class="wrap topin">
+    <div class="brand"><b>sIgNaL 取引管理</b><span>契約・決済報告／売上・歩合</span></div>
+    <nav class="tabs" id="nav"></nav>
+    <span id="who" class="small muted"></span><button class="btn sm" data-act="mypass">パスコード変更</button><button class="btn sm" data-act="logout">ログアウト</button>
+    <button class="btn primary" data-act="new">＋ 契約予定を登録</button>
+  </div>
+</header>
+<main class="wrap" id="app"><p class="muted" style="padding:40px 0">読み込み中…</p></main>
+<div id="loginWrap" hidden><form id="loginForm" class="panel login">
+  <h1>sIgNaL 取引管理</h1><p class="muted small">メールアドレスと、管理者から受け取ったパスコードでログインします。</p>
+  <div class="fld"><label for="lg_email">メールアドレス</label><input id="lg_email" type="email" autocomplete="username" required></div>
+  <div class="fld"><label for="lg_pass">パスコード</label><input id="lg_pass" type="password" inputmode="numeric" autocomplete="current-password" required></div>
+  <button class="btn primary" type="submit">ログイン</button><p id="lg_err" class="small" style="color:var(--bad)"></p>
+</form></div>
+<div id="busy" class="busy" hidden><div>処理中…</div></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+let COMPANY={},PAYDAYS=7;
+const todayStr=()=>{const t=new Date();return`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`};
+const addDays=(s,n)=>{if(!s)return'';const t=new Date(s+'T00:00:00');t.setDate(t.getDate()+n);return`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`};
+/* 祥日＋振替休日＋国民の休日＋銀行の年末年始休業日（2026・2027年）。本番では祝日データを自動更新 */
+let HOLIDAYS=new Set();
+const isBiz=s=>{const w=new Date(s+'T00:00:00').getDay();return w!==0&&w!==6&&!HOLIDAYS.has(s)};
+const nextBiz=s=>{let t=s;while(t&&!isBiz(t))t=addDays(t,1);return t};
+const daysTo=s=>Math.round((new Date(s+'T00:00:00')-new Date(todayStr()+'T00:00:00'))/864e5);
+</script><script>
+/* ===== 共有ロジック（サーバーとブラウザの両方で使う） ===== */
+const KINDS=['土地','新築戸建','中古戸建','収益（区分）','収益（一棟）'];
+const areaKeys=k=>k==='土地'?['land']:k==='収益（区分）'?['bldg']:['land','bldg'];
+function areaOf(kind,land,bldg){const ak=areaKeys(kind);const L=ak.includes('land')?+land||0:0,B=ak.includes('bldg')?+bldg||0:0;
+  const t=kind==='土地'?`土地 ${L.toFixed(2)}㎡`:kind==='収益（区分）'?`専有 ${B.toFixed(2)}㎡`:`土地 ${L.toFixed(2)}㎡／建物 ${B.toFixed(2)}㎡`;
+  return{landArea:L||null,bldgArea:B||null,area:t}}
+const STAGES=['契約予定','契約報告','決済準備','決済報告','書類保管','歩合請求'];
+const TYPE={sale:'売買仲介',buy:'自社買取',rent:'賃貸仲介'};
+const CIRC='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
+const fmt=n=>Math.round(+n||0).toLocaleString('ja-JP');
+const yen=n=>'¥'+fmt(n);
+const jd=s=>{if(!s)return'—';const[y,m,d]=s.split('-');return`${y}年${+m}月${+d}日`};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---------- 業務ロジック ---------- */
+function brokerFee(p){if(p<=2e6)return p*0.05;if(p<=4e6)return p*0.04+20000;return p*0.03+60000}
+const exTax=v=>Math.round((+v||0)/1.1);
+const hasBroker=d=>d.type==='rent'||(d.feeType||'').includes('仲介手数料');
+const hasItaku=d=>d.type!=='rent'&&(d.feeType||'').includes('業務委託料');
+const sidesOf=d=>d.type==='sale'&&d.side==='両手'?2:1;
+/* 仲介手数料の上限額（税込・参考） */
+function autoBrokerIn(d){if(d.type==='rent')return Math.round((+d.rent||0)*(+d.feeMonths||1)*1.1);return Math.round(Math.floor(brokerFee(+d.price||0))*sidesOf(d)*1.1)}
+/* 会社売上（税別）＝ 入力された税込額 ÷ 1.1 */
+function revenue(d){
+  let r=0;if(hasBroker(d))r+=exTax(d.brokerIn);if(hasItaku(d))r+=exTax(d.itakuIn);
+  if(d.type==='rent')r+=(+d.rent||0)*(+d.adRate||0)/100;return r;
+}
+function feeBreakdown(d){
+  const sides=sidesOf(d);const perIn=Math.round((+d.brokerIn||0)/sides);
+  return{brokerIn:hasBroker(d)?+d.brokerIn||0:0,perIn,perEx:exTax(perIn),sides,itakuIn:hasItaku(d)?+d.itakuIn||0:0,ad:(+d.rent||0)*(+d.adRate||0)/100};
+}
+function feeSummary(d){
+  const fb=feeBreakdown(d);const p=[];
+  if(hasBroker(d))p.push(`仲介手数料 税込${yen(fb.brokerIn)}（税別${yen(exTax(fb.brokerIn))}）`);
+  if(hasItaku(d))p.push(`業務委託料 税込${yen(fb.itakuIn)}（税別${yen(exTax(fb.itakuIn))}）`);
+  if(d.type==='rent'&&fb.ad)p.push(`AD 税別${yen(fb.ad)}`);
+  return p.join(' ＋ ')||'報酬額を入力してください';
+}
+function docsFor(d){
+  let L=[];
+  const jnote=d.buyerPro?'業者間のため説明不要（交付・記名は必要）':'';
+  if(d.type==='sale'){
+    const b=d.side==='買主側'||d.side==='両手', s=d.side==='売主側'||d.side==='両手';
+    L=[{k:'contract',n:'売買契約書',p:'契約',req:1},{k:'jusetsu',n:'重要事項説明書',p:'契約',req:1,note:jnote},
+       {k:'baikai',n:'媒介契約書',p:'契約',req:1},
+       ...(d.feeType.includes('業務委託料')?[{k:'itaku',n:'業務委託契約書',p:'契約',req:1}]:[]),
+       {k:'buyerId',n:'買主本人確認書類',p:'契約',req:b?1:0,why:b?'':'相手方業者側で確認'},
+       {k:'sellerId',n:'売主本人確認書類',p:'契約',req:s?1:0,why:s?'':'相手方業者側で確認'},
+       {k:'kokuchi',n:'物件状況報告書・設備表',p:'契約',req:0},{k:'touki',n:'登記事項証明書',p:'契約',req:0},
+       {k:'tetsuke',n:'手付金領収書（写）',p:'契約',req:1},
+       ...(d.feeType.includes('仲介手数料')?[{k:'receipt',n:'仲介手数料領収書（控）',p:'決済',req:1}]:[]),
+       ...(d.feeType.includes('業務委託料')?[{k:'itakurcpt',n:'業務委託料領収書（控）',p:'決済',req:1}]:[]),
+       {k:'handover',n:'引渡確認書',p:'決済',req:1},
+       {k:'seisan',n:'固定資産税等精算書',p:'決済',req:1},{k:'kishu',n:'決済金種一覧',p:'決済',req:0},{k:'furikomi',n:'振込伝票控',p:'決済',req:1}];
+  }else if(d.type==='buy'){
+    L=[{k:'contract',n:'売買契約書（37条書面）',p:'契約',req:1},{k:'sellerId',n:'売主本人確認書類',p:'契約',req:1},
+       {k:'touki',n:'登記事項証明書',p:'契約',req:1},{k:'kokuchi',n:'物件状況報告書・設備表',p:'契約',req:0},
+       {k:'tetsukePay',n:'手付金振込控',p:'契約',req:1},
+       {k:'daikin',n:'代金受領書（売主発行）',p:'決済',req:1},{k:'handover',n:'引渡確認書',p:'決済',req:1},
+       {k:'seisan',n:'固定資産税等精算書',p:'決済',req:1},{k:'kishu',n:'決済金種一覧',p:'決済',req:0},{k:'furikomi',n:'振込伝票控',p:'決済',req:1}];
+  }else{
+    L=[{k:'contract',n:'賃貸借契約書',p:'契約',req:1},{k:'jusetsu',n:'重要事項説明書',p:'契約',req:1,note:jnote},
+       {k:'moshikomi',n:'入居申込書',p:'契約',req:0},{k:'baikai',n:'媒介依頼書',p:'契約',req:0},
+       {k:'tenantId',n:'借主本人確認書類',p:'契約',req:1},
+       {k:'receipt',n:'仲介手数料領収書（控）',p:'決済',req:1},
+       {k:'adinv',n:'AD請求書・入金確認',p:'決済',req:(+d.adRate||0)>0?1:0,why:(+d.adRate||0)>0?'':'ADなし'},
+       {k:'key',n:'鍵引渡確認書',p:'決済',req:1}];
+  }
+  return L.map((x,i)=>({...x,no:CIRC[i]}));
+}
+function genDocsFor(d){
+  if(d.type==='sale')return[...(d.feeType.includes('仲介手数料')?[['receipt','仲介手数料 領収書']]:[]),...(d.feeType.includes('業務委託料')?[['itakuinv','業務委託料 請求書'],['itakurcpt','業務委託料 領収書']]:[]),['handover','引渡確認書'],['seisan','固都税精算書'],['kishu','決済金種一覧']];
+  if(d.type==='buy')return[['handover','引渡確認書'],['seisan','固都税精算書'],['kishu','決済金種一覧']];
+  return[['receipt','領収書'],['adinv','AD請求書']];
+}
+function taxSplit(d){
+  const tax=+d.tax||0;if(!tax||!d.settleDate)return{tax,buyer:0,days:0,total:0};
+  const h=new Date(d.settleDate+'T00:00:00');let y=h.getFullYear();
+  let start=d.taxStart==='4/1'?new Date(y,3,1):new Date(y,0,1);if(h<start){y--;start=d.taxStart==='4/1'?new Date(y,3,1):new Date(y,0,1)}
+  const end=new Date(start.getFullYear()+1,start.getMonth(),start.getDate());
+  const total=Math.round((end-start)/864e5),days=Math.round((end-h)/864e5);
+  return{tax,buyer:Math.round(tax*days/total),days,total,start,end};
+}
+function ledgerRow(d,agents){
+  const a=agents.find(x=>x.id===d.agent);
+  return{dealId:d.id,date:d.contractDate,location:d.location,kind:d.kind,area:d.area,
+    mode:d.type==='buy'?'自ら売買（買主）':(d.type==='rent'?'貸借の媒介':'売買の媒介')+(d.side?`（${d.side}）`:''),
+    seller:d.seller+(d.sellerPro?'【宅建業者】':''),buyer:d.buyer+(d.buyerPro?'【宅建業者】':''),other:d.otherBroker,price:d.type==='rent'?`賃料 ${yen(d.rent)}/月`:yen(d.price),
+    fee:yen(revenue(d))+'（税別）',agent:a?a.name:'',special:d.special||'',settle:d.settleDate};
+}
+/* 会社売上（税込）＝ 仲介手数料（税込）＋ 業務委託料（税込）＋ AD（税込） */
+function revenueIn(d){let r=0;if(hasBroker(d))r+=+d.brokerIn||0;if(hasItaku(d))r+=+d.itakuIn||0;if(d.type==='rent')r+=Math.round((+d.rent||0)*(+d.adRate||0)/100*1.1);return r}
+/* 歩合：会社売上（税込）× 歩合率。登録番号ありはその額（税込）を支払。未登録は消費税相当を除いた額（÷1.1）を支払 */
+const rateOf=(a,d)=>a?(d.type==='rent'&&a.rateRent!=null&&a.rateRent!==''?+a.rateRent:+a.rate):0;
+const isReg=a=>!!(a&&(a.registered||a.invoiceNo));
+/* 免税事業者からの仕入に係る経過措置の控除割合（取引日＝決済日で判定）。令和8年度改正後 */
+function keikaRate(dt){dt=dt||'';if(dt<'2026-10-01')return 0.8;if(dt<'2028-10-01')return 0.7;if(dt<'2030-10-01')return 0.5;if(dt<'2031-10-01')return 0.3;return 0}
+const SPECIAL_CAP=10000000; /* 特例は年間（暦年）の歩合1,000万円まで */
+function grossOf(d,agents){const a=agents.find(x=>x.id===d.agent);return Math.floor(revenueIn(d)*rateOf(a,d)/100)}
+function payoutCalc(d,agents,deals){const a=agents.find(x=>x.id===d.agent);const r=revenue(d),ri=revenueIn(d),rate=rateOf(a,d);const g=Math.floor(ri*rate/100);
+  const reg=isReg(a);let p=g,t=0,ded=0,note='';
+  if(reg){t=g-Math.floor(g*10/11)}
+  else if(a&&a.special){
+    /* 経過措置（2026/10〜：免税事業者からの仕入は消費税相当の70%を控除可）→ 控除できない30%分だけ差し引く。年1,000万円を超えた部分は通常どおり÷1.1 */
+    const y=(d.settleDate||'').slice(0,4);
+    const before=deals.filter(x=>x.agent===d.agent&&x.id!==d.id&&(x.settleDate||'').slice(0,4)===y&&((x.settleDate||'')<(d.settleDate||'')||((x.settleDate||'')===(d.settleDate||'')&&x.id<d.id))).reduce((s2,x)=>s2+grossOf(x,agents),0);
+    const inCap=Math.max(0,Math.min(g,SPECIAL_CAP-before)),over=g-inCap;
+    const cr=keikaRate(d.settleDate),nd=Math.round((1-cr)*100);
+    ded=Math.round((inCap-inCap*10/11)*(1-cr))+(over-Math.floor(over*10/11));
+    p=g-ded;note=over>0?`経過措置の特例（${nd}%分控除）と通常控除の併用：年間1,000万円超過分 ${fmt(over)}円は÷1.1`:`経過措置の特例：消費税相当額の${nd}%分のみ控除`;
+  } else {p=Math.floor(g*10/11);ded=g-p;note='適格請求書発行事業者の登録なし'}
+  return{rev:r,revIn:ri,rate,gross:g,deduct:g-p,reg,pay:p,tax:t,total:p,keep:ri-p,agent:a,note}}
+function missingDocs(d,phase){const f=d.files||{};return docsFor(d).filter(x=>x.req&&(!phase||x.p===phase)&&!f[x.k])}
+</script><script>
+/* ---------- 状態 ---------- */
+let S={agents:[],deals:[],ledger:[]},ME=null,TOKEN=null;
+try{TOKEN=localStorage.getItem('signal-token')}catch(e){}
+let UI={view:'dash',dealId:null,stageView:null,docTab:null};
+const isAdmin=()=>!!(ME&&ME.isAdmin);
+let ROLE='';
+const mine=d=>ROLE===d.agent;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,4000)}
+const agentName=id=>{const a=S.agents.find(a=>a.id===id);if(a)return a.name;const d=S.deals.find(x=>x.agent===id&&x.agentLabel);return d?d.agentLabel:'—'};
+const deal=()=>S.deals.find(d=>d.id===UI.dealId);
+function payout(d){if(!isAdmin()&&d._payout){return Object.assign({rate:'',keep:0,agent:S.agents.find(a=>a.id===d.agent)||{name:'',addr:'',tel:'',mail:'',bank:''}},d._payout)}const p=payoutCalc(d,S.agents,S.deals);if(!p.agent)p.agent={name:agentName(d.agent),addr:'',tel:'',mail:'',bank:''};return p}
+const missing=(d,ph)=>missingDocs(d,ph);
+function stagePill(d){
+  if(d.stage>=6)return'<span class="pill ok">完了</span>';
+  const cls=d.stage===0?'ghost':(d.stage>=4?'ok':'');
+  return`<span class="pill ${cls}">${STAGES[d.stage]}</span>`;
+}
+/* サーバー呼び出し */
+const API_URL='https://script.google.com/macros/s/AKfycbxMdVncWAgYSpbUBnRiHgEuToFgA0rJYi1LaXofQ_wG88lT5JlESNIztjDugYZcvEJm/exec';
+async function apiPost(token,action,payload){
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token,action,payload:payload||{}}),redirect:'follow'});
+  if(!r.ok)throw new Error('サーバーに接続できませんでした（'+r.status+'）');
+  return r.json();
+}
+async function call(action,payload,{quiet}={}){
+  if(!quiet)document.getElementById('busy').hidden=false;
+  try{
+    const r=await apiPost(TOKEN,action,payload);
+    if(r&&r.ok)return r.data;
+    if(r&&r.relogin){try{localStorage.removeItem('signal-token')}catch(_){}TOKEN=null;showLogin();}
+    toast((r&&r.error)||'エラーが発生しました');throw r;
+  }catch(e){if(e&&e.message&&!('ok' in e))toast(navigator.onLine?('通信エラー：'+e.message):'オフラインです。電波の良い場所でもう一度お試しください');throw e}
+  finally{document.getElementById('busy').hidden=true}
+}
+function putDeal(d){const i=S.deals.findIndex(x=>x.id===d.id);if(i>=0)S.deals[i]=d;else S.deals.unshift(d)}
+function showLogin(){document.getElementById('app').hidden=true;document.querySelector('header.top').hidden=true;document.getElementById('loginWrap').hidden=false}
+async function boot(){
+  if(!TOKEN){showLogin();return}
+  try{const b=await call('bootstrap',{},{quiet:true});
+    S={agents:b.agents,deals:b.deals,ledger:b.ledger};ME=b.me;ROLE=ME.id;COMPANY=b.company;PAYDAYS=b.payDays||7;HOLIDAYS=new Set(b.holidays||[]);UI.links=b.folders;
+    document.getElementById('loginWrap').hidden=true;document.getElementById('app').hidden=false;document.querySelector('header.top').hidden=false;
+    document.getElementById('who').textContent=ME.name+(ME.isAdmin?'（管理者）':'');render();
+  }catch(e){}
+}
+/* ---------- ナビ ---------- */
+function renderNav(){
+  const items=[['dash','ダッシュボード'],['deals','案件一覧'],['sales','売上管理'],['ledger','契約台帳'],...(isAdmin()?[['agents','エージェント・歩合']]:[])];
+  const v=UI.view==='deal'||UI.view==='new'?'deals':UI.view;
+  document.getElementById('nav').innerHTML=items.map(([k,l])=>`<button data-act="view" data-v="${k}" aria-current="${v===k}">${l}</button>`).join('');
+}
+
+/* ---------- 売上集計（権限で絞り込み） ---------- */
+const visDeals=()=>isAdmin()?S.deals:S.deals.filter(mine);
+const BUCKET=d=>d.stage>=4?'c':(d.stage>=1?'k':'y'); /* 確定・契約済・契約予定 */
+const BLABEL={c:'確定（決済済）',k:'契約済・決済待ち',y:'契約予定'};
+const ymOf=s=>s?s.slice(0,7):'';
+function monthsBetween(from,to){const out=[];let [y,m]=from.split('-').map(Number);const [ty,tm]=to.split('-').map(Number);while(y<ty||(y===ty&&m<=tm)){out.push(`${y}-${String(m).padStart(2,'0')}`);m++;if(m>12){m=1;y++}if(out.length>36)break}return out}
+function agg(list){const o={c:0,k:0,y:0,pay:0,allIn:0,n:0};list.forEach(d=>{o[BUCKET(d)]+=revenue(d);o.pay+=payout(d).pay;o.allIn+=revenueIn(d);o.n++});o.all=o.c+o.k+o.y;return o}
+function barChart(months,list,basis){
+  const mv=months.map(m=>{const ds=list.filter(d=>ymOf(basis==='contract'?d.contractDate:d.settleDate)===m);return{m,...agg(ds)}});
+  const max=Math.max(1,...mv.map(x=>x.all));const H=150;
+  return`<div class="tbl"><div style="min-width:${Math.max(300,months.length*52)}px">
+  <div class="bars" style="grid-template-columns:repeat(${months.length},1fr)">${mv.map(x=>`<div class="bar" title="${+x.m.slice(5)}月 合計${yen(x.all)}">
+    <div class="val">${x.all?Math.round(x.all/1e4).toLocaleString()+'万':''}</div>
+    ${['y','k','c'].map(k=>x[k]?`<div class="seg ${k}" style="height:${x[k]/max*H}px"></div>`:'').join('')}</div>`).join('')}</div>
+  <div class="barlbl" style="grid-template-columns:repeat(${months.length},1fr)">${mv.map(x=>`<span>${x.m.slice(5)==='01'||x===mv[0]?x.m.slice(2,4)+'/':''}${+x.m.slice(5)}月</span>`).join('')}</div></div></div>`;
+}
+const legend=()=>`<div class="legend"><span><i class="lg c"></i>確定</span><span><i class="lg k"></i>契約済</span><span><i class="lg y"></i>契約予定</span></div>`;
+
+/* ---------- ダッシュボード ---------- */
+function vDash(){
+  const L=visDeals();const now=new Date(todayStr());const ym=todayStr().slice(0,7);
+  const thisM=L.filter(d=>ymOf(d.settleDate)===ym);
+  const plan=L.filter(d=>d.stage===0);
+  const waiting=L.filter(d=>d.stage>=1&&d.stage<=3);
+  const unclaimed=L.filter(d=>d.stage===5);
+  const months=[];for(let i=-3;i<=2;i++){const t=new Date(now.getFullYear(),now.getMonth()+i,1);months.push(`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`)}
+  const alerts=[];
+  L.forEach(d=>{
+    if(d.stage===0&&d.takkenNeeded)alerts.push(['warn',`<b>${esc(d.name)}</b>　契約当日（${jd(d.contractDate)}）に宅建士の手配が必要です`,d.id]);
+    if(d.stage===0&&daysTo(d.contractDate)<=10&&daysTo(d.contractDate)>=0)alerts.push(['warn',`<b>${esc(d.name)}</b>　契約まであと${daysTo(d.contractDate)}日`,d.id]);
+    if(d.stage===2&&daysTo(d.settleDate)<=21)alerts.push(['warn',`<b>${esc(d.name)}</b>　決済まであと${daysTo(d.settleDate)}日。決済書類を作成してください`,d.id]);
+    if(d.stage===5)alerts.push(['',`<b>${esc(d.name)}</b>　歩合請求書が未申請です${isAdmin()?`（${esc(agentName(d.agent))}）`:''}`,d.id]);
+  });
+  const fwd=agg(L.filter(d=>d.stage<4));
+  return`
+  <div class="row spread"><h1>${isAdmin()?'ダッシュボード':esc(agentName(ROLE))+' さんのダッシュボード'}</h1><span class="muted small">${jd(todayStr())} 時点</span></div>
+  <div class="kpis">
+    <div class="kpi"><div class="l">今月の決済予定売上（税別）</div><div class="v">${yen(agg(thisM).all)}</div><div class="s">うち確定 ${yen(agg(thisM).c)}</div></div>
+    <div class="kpi"><div class="l">今後の売上見込み</div><div class="v">${yen(fwd.all)}</div><div class="s">契約済 ${yen(fwd.k)}／契約予定 ${yen(fwd.y)}</div></div>
+    <div class="kpi"><div class="l">契約予定・決済待ち</div><div class="v">${plan.length}件・${waiting.length}件</div><div class="s">進行中の案件</div></div>
+    <div class="kpi"><div class="l">${isAdmin()?'歩合 未請求':'自分の歩合 未請求'}</div><div class="v">${yen(unclaimed.reduce((s,d)=>s+payout(d).total,0))}</div><div class="s">${unclaimed.length}件</div></div>
+  </div>
+  <div class="grid2">
+    <section class="panel"><h2>要対応</h2><div class="alerts">${alerts.length?alerts.map(([c,t,id])=>`<div class="alert ${c}"><div class="t">${t}</div><button class="btn sm" data-act="open" data-id="${id}">開く</button></div>`).join(''):'<p class="muted">対応が必要な案件はありません。</p>'}</div></section>
+    <section class="panel"><div class="row spread"><h2>月別売上（税別・決済日ベース）</h2>${legend()}</div>${barChart(months,L,'settle')}
+      <div class="row" style="margin-top:10px"><button class="btn sm" data-act="view" data-v="sales">売上管理で詳しく見る →</button></div></section>
+  </div>
+  ${vDealsTable(L.filter(d=>d.stage<6),'進行中の案件')}`;
+}
+
+/* ---------- 売上管理 ---------- */
+function presetRange(p){
+  const t=new Date(todayStr());const y=t.getFullYear(),m=t.getMonth();const f=(yy,mm,dd)=>{const x=new Date(yy,mm,dd);return`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
+  if(p==='thisMonth')return[f(y,m,1),f(y,m+1,0)];
+  if(p==='lastMonth')return[f(y,m-1,1),f(y,m,0)];
+  if(p==='quarter'){const q=Math.floor(m/3)*3;return[f(y,q,1),f(y,q+3,0)]}
+  if(p==='next3')return[f(y,m,1),f(y,m+3,0)];
+  if(p==='year')return[f(y,0,1),f(y,11,31)];
+  if(p==='last12')return[f(y,m-11,1),f(y,m+1,0)];
+  return null;
+}
+function salesState(){if(!UI.sales){const [a,b]=presetRange('year');UI.sales={preset:'year',from:a,to:b,basis:'settle',agent:'all'}}if(!isAdmin())UI.sales.agent=ROLE;return UI.sales}
+function vSales(){
+  const st=salesState();const key=d=>st.basis==='contract'?d.contractDate:d.settleDate;
+  let L=visDeals().filter(d=>key(d)&&key(d)>=st.from&&key(d)<=st.to);
+  if(isAdmin()&&st.agent!=='all')L=L.filter(d=>d.agent===st.agent);
+  const A=agg(L);const months=monthsBetween(st.from.slice(0,7),st.to.slice(0,7));
+  const presets=[['thisMonth','今月'],['lastMonth','先月'],['quarter','今四半期'],['next3','今月から3か月'],['year','今年'],['last12','直近12か月'],['custom','期間を指定']];
+  const byAgent=S.agents.map(a=>({a,...agg(L.filter(d=>d.agent===a.id))})).filter(x=>isAdmin()?true:x.a.id===ROLE);
+  return`<div class="row spread"><h1>売上管理</h1>${isAdmin()?'':'<span class="pill">自分の担当案件のみ</span>'}</div>
+  <section class="panel"><div class="form" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+    <div class="fld"><label for="s_preset">期間</label><select id="s_preset" data-sales="preset">${presets.map(([k,l])=>`<option value="${k}" ${st.preset===k?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="fld"><label for="s_from">開始日</label><input type="date" id="s_from" data-sales="from" value="${st.from}"></div>
+    <div class="fld"><label for="s_to">終了日</label><input type="date" id="s_to" data-sales="to" value="${st.to}"></div>
+    <div class="fld"><label for="s_basis">計上基準</label><select id="s_basis" data-sales="basis"><option value="settle" ${st.basis==='settle'?'selected':''}>決済日・入居日</option><option value="contract" ${st.basis==='contract'?'selected':''}>契約日</option></select></div>
+    ${isAdmin()?`<div class="fld"><label for="s_agent">担当者</label><select id="s_agent" data-sales="agent"><option value="all">全員</option>${S.agents.map(a=>`<option value="${a.id}" ${st.agent===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></div>`:''}
+  </div></section>
+  <div class="kpis">
+    <div class="kpi"><div class="l">売上見込み 合計（税別）</div><div class="v">${yen(A.all)}</div><div class="s">${A.n}件・契約予定を含む</div></div>
+    <div class="kpi"><div class="l">確定（決済済）</div><div class="v">${yen(A.c)}</div><div class="s">${L.filter(d=>BUCKET(d)==='c').length}件</div></div>
+    <div class="kpi"><div class="l">契約済・決済待ち</div><div class="v">${yen(A.k)}</div><div class="s">${L.filter(d=>BUCKET(d)==='k').length}件</div></div>
+    <div class="kpi"><div class="l">契約予定</div><div class="v">${yen(A.y)}</div><div class="s">${L.filter(d=>BUCKET(d)==='y').length}件</div></div>
+    ${isAdmin()?`<div class="kpi"><div class="l">会社取り分（税込）</div><div class="v">${yen(A.allIn-A.pay)}</div><div class="s">税込売上 ${yen(A.allIn)}／歩合 ${yen(A.pay)}</div></div>`:`<div class="kpi"><div class="l">自分の歩合（見込み含む・税込）</div><div class="v">${yen(A.pay)}</div><div class="s">確定分 ${yen(L.filter(d=>BUCKET(d)==='c').reduce((s,d)=>s+payout(d).pay,0))}</div></div>`}
+  </div>
+  <section class="panel"><div class="row spread"><h2>月別推移</h2>${legend()}</div>${barChart(months,L,st.basis)}</section>
+  ${isAdmin()?`<section class="panel"><h2>担当者別</h2><div class="tbl"><table><thead><tr><th>担当</th><th class="num">件数</th><th class="num">確定</th><th class="num">契約済</th><th class="num">契約予定</th><th class="num">見込み合計</th><th class="num">構成比</th><th class="num">歩合</th><th class="num">会社取り分</th></tr></thead>
+  <tbody>${byAgent.map(x=>`<tr><td>${esc(x.a.name)} <span class="small muted">${x.a.rate}%${x.a.rateRent!=x.a.rate?'／賃貸'+x.a.rateRent+'%':''}</span></td><td class="num">${x.n}</td><td class="num">${yen(x.c)}</td><td class="num">${yen(x.k)}</td><td class="num">${yen(x.y)}</td><td class="num"><b>${yen(x.all)}</b></td><td class="num">${A.all?Math.round(x.all/A.all*100):0}%</td><td class="num">${yen(x.pay)}</td><td class="num">${yen(x.allIn-x.pay)}</td></tr>`).join('')}
+  <tr><td><b>合計</b></td><td class="num">${A.n}</td><td class="num">${yen(A.c)}</td><td class="num">${yen(A.k)}</td><td class="num">${yen(A.y)}</td><td class="num"><b>${yen(A.all)}</b></td><td class="num">100%</td><td class="num">${yen(A.pay)}</td><td class="num">${yen(A.allIn-A.pay)}</td></tr></tbody></table></div></section>`:''}
+  <section class="panel"><h2>対象案件</h2><div class="tbl"><table class="cards"><thead><tr><th>案件</th>${isAdmin()?'<th>担当</th>':''}<th>${st.basis==='contract'?'契約日':'決済日'}</th><th>区分</th><th class="num">売上（税別）</th>${isAdmin()?'<th class="num">歩合</th><th class="num">会社取り分</th>':'<th class="num">自分の歩合（税込）</th>'}</tr></thead>
+  <tbody>${L.sort((a,b)=>key(a)<key(b)?-1:1).map(d=>{const p=payout(d);const b=BUCKET(d);return`<tr class="click" data-act="open" data-id="${d.id}"><td class="ttl"><b>${esc(d.name)}</b></td>${isAdmin()?`<td data-l="担当">${esc(agentName(d.agent))}</td>`:''}<td data-l="${st.basis==='contract'?'契約日':'決済日'}">${jd(key(d))}</td><td data-l="区分"><span class="pill ${b==='c'?'ok':b==='y'?'ghost':''}">${BLABEL[b]}</span></td><td class="num" data-l="売上（税別）">${yen(p.rev)}</td>${isAdmin()?`<td class="num" data-l="歩合">${yen(p.pay)}</td><td class="num" data-l="会社取り分">${yen(p.keep)}</td>`:`<td class="num" data-l="自分の歩合（税込）">${yen(p.pay)}</td>`}</tr>`}).join('')||`<tr><td colspan="7" class="muted">この期間に該当する案件はありません。</td></tr>`}</tbody></table></div></section>`;
+}
+function vDealsTable(list,title){
+  return`<section class="panel"><h2>${title}</h2><div class="tbl"><table class="cards">
+  <thead><tr><th>案件</th><th>種別</th><th>担当</th><th>契約日</th><th>決済日</th><th class="num">売上（税別）</th><th>工程</th><th>書類</th></tr></thead>
+  <tbody>${list.map(d=>{const m=missing(d,d.stage>=3?null:'契約').length;const show=d.stage>=1;return`<tr class="click" data-act="open" data-id="${d.id}"><td class="ttl"><b>${esc(d.name)}</b><div class="small muted">${d.id}</div></td><td data-l="種別">${TYPE[d.type]}<div class="small muted">${esc(d.feeType)}${d.side?'・'+esc(d.side):''}</div></td><td data-l="担当">${esc(agentName(d.agent))}</td><td data-l="契約日">${jd(d.contractDate)}</td><td data-l="決済日">${jd(d.settleDate)}</td><td class="num" data-l="売上（税別）">${yen(revenue(d))}</td><td data-l="工程">${stagePill(d)}</td><td data-l="書類">${show?(m?`<span class="pill bad">不足 ${m}</span>`:'<span class="pill ok">揃っています</span>'):'<span class="muted small">—</span>'}</td></tr>`}).join('')}</tbody></table></div></section>`;
+}
+function vDeals(){return`<div class="row spread"><h1>案件一覧</h1><button class="btn primary" data-act="new">＋ 契約予定を登録</button></div>${vDealsTable(visDeals(),isAdmin()?'全案件':'自分の担当案件')}`}
+
+/* ---------- 新規登録 ---------- */
+function vNew(){
+  const a=S.agents[0];
+  return`<div class="row spread"><h1>契約予定の登録</h1><button class="btn" data-act="view" data-v="deals">キャンセル</button></div>
+  <form class="panel" id="newForm">
+    <h2>取引条件</h2>
+    <div class="form">
+      <div class="fld wide"><label for="f_name">案件名（物件名）</label><input id="f_name" required value="" placeholder="例：武蔵中原ガーデンハウス404"></div>
+      <div class="fld"><label>取引種別</label><div class="seg-ctl">${Object.entries(TYPE).map(([k,l],i)=>`<label><input type="radio" name="type" value="${k}" ${i===0?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
+      <div class="fld" data-for="sale buy"><label>報酬形態</label><div class="seg-ctl"><label><input type="radio" name="feeType" value="仲介手数料" checked><span>仲介手数料</span></label><label><input type="radio" name="feeType" value="業務委託料"><span>業務委託料</span></label><label><input type="radio" name="feeType" value="仲介手数料＋業務委託料"><span>仲介手数料＋業務委託料</span></label></div></div>
+      <div class="fld" data-for="sale"><label>当社の立場</label><div class="seg-ctl">${['売主側','買主側','両手'].map((s,i)=>`<label><input type="radio" name="side" value="${s}" ${i===2?'checked':''}><span>${s}</span></label>`).join('')}</div></div>
+      <div class="fld"><label for="f_agent">担当エージェント</label><select id="f_agent">${(isAdmin()?S.agents:S.agents.filter(x=>x.id===ROLE)).map(x=>`<option value="${x.id}" ${ROLE===x.id?'selected':''}>${esc(x.name)}${isAdmin()?`（歩合${x.rate}%${x.rateRent!=x.rate?'・賃貸'+x.rateRent+'%':''}${x.takken?'・宅建士':''}）`:(x.takken?'（宅建士）':'')}</option>`).join('')}</select></div>
+      <div class="fld wide"><label for="f_loc">物件所在地</label><input id="f_loc" value=""></div>
+      <div class="fld"><label for="f_kind">種別</label><select id="f_kind">${KINDS.map(k=>`<option ${k==='収益（区分）'?'selected':''}>${k}</option>`).join('')}</select></div>
+      <div class="fld" data-area="land"><label for="f_land">土地面積</label><div class="unit"><input id="f_land" type="number" step="0.01" value=""><span>㎡</span></div></div>
+      <div class="fld" data-area="bldg"><label for="f_bldg" id="l_bldg">建物面積</label><div class="unit"><input id="f_bldg" type="number" step="0.01" value=""><span>㎡</span></div></div>
+      <div class="fld" data-for="sale buy"><label for="f_price">売買価格（円）</label><input id="f_price" type="number" value=""></div>
+      <div class="fld" data-for="sale buy"><label for="f_dep">手付金（円）</label><input id="f_dep" type="number" value=""></div>
+      <div class="fld" data-for="rent"><label for="f_rent">賃料（円／月）</label><input id="f_rent" type="number" value=""></div>
+      <div class="fld" data-for="rent"><label for="f_ad">AD（賃料の何%）0ならADなし</label><input id="f_ad" type="number" value="0"></div>
+      <div class="fld" data-for="broker"><label for="f_bfee">仲介手数料（税込・円）</label><input id="f_bfee" type="number" value=""><span class="small muted" id="h_bfee"></span></div>
+      <div class="fld" data-for="itaku"><label for="f_ifee">業務委託料（税込・円）</label><input id="f_ifee" type="number" value=""></div>
+      <div class="fld"><label for="f_cdate">契約予定日</label><input id="f_cdate" type="date" value="" required></div>
+      <div class="fld"><label for="f_sdate">決済・引渡（入居）予定日</label><input id="f_sdate" type="date" value=""></div>
+      <div class="fld"><label for="f_seller" id="l_seller">売主</label><input id="f_seller" value=""><label class="chk"><input type="checkbox" id="f_sellerPro"> <span class="lpro">売主</span>は宅建業者</label></div>
+      <div class="fld"><label for="f_buyer" id="l_buyer">買主</label><input id="f_buyer" value=""><label class="chk"><input type="checkbox" id="f_buyerPro"> <span class="lpro">買主</span>は宅建業者</label></div>
+      <div class="fld"><label for="f_other">取引に関与した他業者</label><input id="f_other" value="なし"></div>
+      <div class="fld"><label for="f_tax">固定資産税・都市計画税 年額（円）</label><input id="f_tax" type="number" value=""></div>
+      <div class="fld wide"><label for="f_sp">特約・備考</label><input id="f_sp" value=""></div>
+    </div>
+    <div class="calc" id="calc" style="margin-top:14px"></div>
+    <h2 style="margin-top:22px">契約当日の宅建士</h2>
+    <div class="form">
+      <div class="fld wide"><div class="seg-ctl"><label><input type="radio" name="tk" value="self" ${a.takken?'checked':''}><span>担当者本人が重説・記名する</span></label><label><input type="radio" name="tk" value="need" ${a.takken?'':'checked'}><span>宅建士の手配が必要</span></label></div></div>
+    </div>
+    <div class="row" style="margin-top:20px"><button class="btn primary" type="submit">契約予定として登録</button><span class="muted small">登録すると案件の工程管理が始まります。</span></div>
+  </form>`;
+}
+function readForm(){
+  const f=document.getElementById('newForm');const g=id=>document.getElementById(id).value;
+  const type=f.type.value;
+  return{type,feeType:type==='rent'?'仲介手数料':f.feeType.value,side:type==='sale'?f.side.value:(type==='rent'?'借主側':''),
+    name:g('f_name'),agent:g('f_agent'),location:g('f_loc'),kind:g('f_kind'),...areaOf(g('f_kind'),g('f_land'),g('f_bldg')),price:+g('f_price'),deposit:+g('f_dep'),
+    rent:+g('f_rent'),feeMonths:1,adRate:+g('f_ad'),brokerIn:+g('f_bfee'),itakuIn:+g('f_ifee'),contractDate:g('f_cdate'),settleDate:g('f_sdate'),
+    seller:g('f_seller'),buyer:g('f_buyer'),sellerPro:document.getElementById('f_sellerPro').checked,buyerPro:document.getElementById('f_buyerPro').checked,otherBroker:g('f_other'),tax:+g('f_tax'),special:g('f_sp'),
+    takkenNeeded:f.tk.value==='need'};
+}
+function syncForm(){
+  const f=document.getElementById('newForm');if(!f)return;const d=readForm();
+  const bf=document.getElementById('f_bfee');const cap=autoBrokerIn(d);
+  if(!bf.dataset.touched){bf.value=cap;d.brokerIn=cap}
+  f.querySelectorAll('[data-for]').forEach(el=>{const k=el.dataset.for.split(' ');el.hidden=!(k.includes(d.type)||(hasBroker(d)&&k.includes('broker'))||(hasItaku(d)&&k.includes('itaku')))});
+  document.getElementById('h_bfee').innerHTML=`${d.type==='rent'?'賃料1か月分':'速算式の上限'}：${yen(cap)}${sidesOf(d)===2?'（両手・2者分合計）':''} <button type="button" class="btn sm" data-act="capfee">上限額を入れる</button>`;
+  document.getElementById('l_seller').textContent=d.type==='rent'?'貸主':'売主';
+  document.getElementById('l_buyer').textContent=d.type==='rent'?'借主':'買主';
+  const ak=areaKeys(d.kind);f.querySelectorAll('[data-area]').forEach(el=>el.hidden=!ak.includes(el.dataset.area));
+  document.getElementById('l_bldg').textContent=d.kind==='収益（区分）'?'建物面積（専有面積）':'建物面積（延床面積）';
+  const lp=f.querySelectorAll('.lpro');lp[0].textContent=d.type==='rent'?'貸主':'売主';lp[1].textContent=d.type==='rent'?'借主':'買主';
+  const t=feeSummary(d);
+  const a=S.agents.find(x=>x.id===d.agent);const r=revenue(d);
+  document.getElementById('calc').innerHTML=`<div class="row spread"><div><div class="muted small">会社売上（税別）</div><b>${yen(r)}</b> <span class="small muted">税込 ${yen(r*1.1)}</span><div class="small muted">${t}</div></div>${isAdmin()?`<div style="text-align:right"><div class="muted small">${esc(a.name)} の歩合 ${rateOf(a,d)}%（税込売上 ${yen(payout(d).revIn)} から）</div><b>${yen(payout(d).pay)}</b><div class="small muted">会社取り分（税込） ${yen(payout(d).keep)}</div></div>`:(ROLE===a.id?`<div style="text-align:right"><div class="muted small">自分の歩合（見込み・税込）</div><b>${yen(payout(d).pay)}</b></div>`:'')}</div>`;
+}
+
+/* ---------- 案件詳細 ---------- */
+function vDeal(){
+  const d=deal();if(!d)return'';
+  const sv=UI.stageView??Math.min(d.stage,5);
+  const pv=payout(d);
+  return`
+  <div class="row spread"><div><div class="small muted">${d.id}・${TYPE[d.type]}・${esc(d.feeType)}${d.side?'・'+esc(d.side):''}</div><h1>${esc(d.name)}</h1></div>
+    <div class="row"><button class="btn" data-act="view" data-v="deals">← 一覧</button>${d.stage<6?'':'<span class="pill ok">完了</span>'}</div></div>
+  <div class="stepper">${STAGES.map((s,i)=>`<button class="step ${i<d.stage?'done':''} ${i===d.stage?'cur':''} ${i===sv?'sel':''}" data-act="stage" data-s="${i}" ${i>d.stage?'disabled':''}><div class="n">STEP ${i+1}${i<d.stage?' ✓':''}</div><div class="lb">${s}</div></button>`).join('')}</div>
+  <div class="grid2" style="grid-template-columns:minmax(0,2fr) minmax(280px,1fr)">
+    <section class="panel">${d.source==='過去取込'?`<h2>過去の取引（取り込みデータ）</h2><p class="small">${esc(d.pastNote||'')}</p>${d.pastMissing?`<p class="small" style="color:var(--bad)">不足書類：${esc(d.pastMissing)}</p>`:''}<p><a class="lnk" target="_blank" href="${esc(d.folderUrl||'#')}">書類フォルダを開く</a></p>`:stagePanel(d,sv)}</section>
+    <aside class="panel"><h2>取引条件</h2><dl class="facts" style="grid-template-columns:1fr">
+      <div><dt>担当</dt><dd>${esc(agentName(d.agent))}</dd></div>
+      <div><dt>${d.type==='rent'?'賃料':'価格'}</dt><dd>${d.type==='rent'?yen(d.rent)+'/月':yen(d.price)}</dd></div>
+      ${d.type!=='rent'?`<div><dt>手付金</dt><dd>${yen(d.deposit)}</dd></div>`:`<div><dt>AD</dt><dd>${(+d.adRate||0)?d.adRate+'%（'+yen(d.rent*d.adRate/100)+'）':'なし'}</dd></div>`}
+      <div><dt>契約日</dt><dd>${jd(d.contractDate)}</dd></div>
+      <div><dt>${d.type==='rent'?'入居日':'決済日'}</dt><dd>${jd(d.settleDate)}</dd></div>
+      <div><dt>${d.type==='rent'?'貸主':'売主'}</dt><dd>${esc(d.seller)}${d.sellerPro?' <span class="pill">宅建業者</span>':''}</dd></div>
+      <div><dt>${d.type==='rent'?'借主':'買主'}</dt><dd>${esc(d.buyer)}${d.buyerPro?' <span class="pill">宅建業者</span>':''}</dd></div>
+      <div><dt>契約当日の宅建士</dt><dd>${d.takkenNeeded?'<span class="pill warn">手配が必要</span>':'担当者本人'}</dd></div>
+      <div><dt>会社売上（税別）</dt><dd>${yen(pv.rev)}</dd></div>
+      ${isAdmin()?`<div><dt>歩合 ${pv.rate}%（税込）</dt><dd>${yen(pv.pay)}</dd></div>`:(mine(d)?`<div><dt>自分の歩合（税込）</dt><dd>${yen(pv.pay)}</dd></div>`:'')}
+      <div><dt>案件フォルダ</dt><dd>${d.folderUrl?`<a class="lnk" target="_blank" href="${esc(d.folderUrl)}">開く</a>`:"—"}</dd></div>
+      <div><dt>契約台帳</dt><dd>${d.ledgerNo?'No.'+d.ledgerNo+' 記帳済':'未記帳'}</dd></div>
+    </dl></aside>
+  </div>`;
+}
+function checklist(d,phase){
+  return`<div class="checklist">${docsFor(d).filter(x=>!phase||x.p===phase).map(x=>{const f=(d.files||{})[x.k];return`<div class="ck ${f?'has':''} ${!f&&x.req&&UI.flagMissing?'miss':''}">
+    <div class="no">${x.no}</div><div style="min-width:0"><div class="nm">${x.n} ${x.note?`<span class="small muted">${x.note}</span> `:''}${x.req?'<span class="pill ghost">必須</span>':`<span class="small muted">${x.why||'任意'}</span>`}</div>
+    <div class="fn">${f?`保存済：<a class="lnk" target="_blank" href="${esc((d.fileLinks||{})[x.k]||'#')}">${esc(f)}</a>`:'未アップロード'}</div></div>
+    <label class="btn sm">${f?'差し替え':'アップロード'}<input type="file" data-up="${x.k}" accept=".pdf,image/*"></label></div>`}).join('')}</div>`;
+}
+function stagePanel(d,s){
+  if(s===0){return`<h2>契約予定</h2>
+    <dl class="facts"><div><dt>契約予定日</dt><dd>${jd(d.contractDate)}（${daysTo(d.contractDate)>=0?'あと'+daysTo(d.contractDate)+'日':Math.abs(daysTo(d.contractDate))+'日経過'}）</dd></div>
+    <div><dt>決済予定日</dt><dd>${jd(d.settleDate)}</dd></div></dl>
+    <div style="margin:16px 0" class="alert ${d.takkenNeeded?'warn':''}"><div class="t"><b>宅建士の手配</b><br>${d.takkenNeeded?'契約当日に宅建士の手配が必要です。':'担当者本人が宅建士として重要事項説明・35条書面／37条書面への記名を行います。'}${d.buyerPro&&d.type!=='buy'?`<br><span class="small">${d.type==='rent'?'借主':'買主'}が宅建業者のため、重要事項の説明は不要です（35条書面の交付と宅建士の記名は必要）。</span>`:''}</div></div>
+    <p class="muted small">契約が完了したら、契約報告に進んで契約書類をアップロードします。</p>
+    <button class="btn primary" data-act="advance" ${d.stage!==0?'disabled':''}>契約が完了した → 契約報告へ</button>`}
+  if(s===1){return`<div class="row spread"><h2>契約報告</h2></div>
+    <h3>報酬額の確定（税込で入力）</h3>
+    <div class="form" style="margin-bottom:8px">
+      ${hasBroker(d)?`<div class="fld"><label for="r_bfee">仲介手数料（税込・円）${sidesOf(d)===2?'　両手・2者分合計':''}</label><input id="r_bfee" type="number" data-edit="brokerIn" value="${+d.brokerIn||0}" ${d.stage!==1?'disabled':''}><span class="small muted">上限 ${yen(autoBrokerIn(d))}</span></div>`:''}
+      ${hasItaku(d)?`<div class="fld"><label for="r_ifee">業務委託料（税込・円）</label><input id="r_ifee" type="number" data-edit="itakuIn" value="${+d.itakuIn||0}" ${d.stage!==1?'disabled':''}></div>`:''}
+    </div>
+    <div class="calc" style="margin-bottom:16px">会社売上（税別） <b>${yen(revenue(d))}</b><div class="small muted">${feeSummary(d)}</div></div>
+    <div class="row" style="margin-bottom:14px"><label class="small"><input type="checkbox" data-edit="sellerPro" id="r_sp" ${d.sellerPro?'checked':''} ${d.stage!==1?'disabled':''}> ${d.type==='rent'?'貸主':'売主'}は宅建業者</label><label class="small"><input type="checkbox" data-edit="buyerPro" id="r_bp" ${d.buyerPro?'checked':''} ${d.stage!==1?'disabled':''}> ${d.type==='rent'?'借主':'買主'}は宅建業者</label></div>
+    <h3>契約書類</h3>
+    <p class="muted small" style="margin-top:-6px">契約時に保管が必要な書類です。申請すると契約台帳スプレッドシートに自動記帳されます。</p>
+    ${checklist(d,'契約')}
+    <div class="row" style="margin-top:16px"><button class="btn primary" data-act="report1" ${d.stage!==1?'disabled':''}>契約報告を申請</button>${missing(d,'契約').length?`<span class="small" style="color:var(--bad)">必須書類があと${missing(d,'契約').length}点必要です</span>`:''}</div>`}
+  if(s===2){const g=genDocsFor(d);const tab=UI.docTab&&g.find(x=>x[0]===UI.docTab)?UI.docTab:g[0][0];
+    return`<h2>${d.type==='rent'?'入居・精算準備':'決済準備'}</h2>
+    ${d.type!=='rent'?`<div class="form" style="margin-bottom:14px">
+      <div class="fld"><label for="e_tax">固都税 年額（円）</label><input id="e_tax" type="number" data-edit="tax" value="${d.tax}"></div>
+      <div class="fld"><label for="e_ts">精算起算日</label><select id="e_ts" data-edit="taxStart"><option ${d.taxStart==='1/1'?'selected':''}>1/1</option><option ${d.taxStart==='4/1'?'selected':''}>4/1</option></select></div>
+      <div class="fld"><label for="e_jud">登記費用（司法書士・円）</label><input id="e_jud" type="number" data-edit="judicial" value="${d.judicial}"></div>
+      <div class="fld"><label for="e_bank">売主振込先</label><input id="e_bank" data-edit="sellerBank" value="${esc(d.sellerBank)}"></div>
+      ${d.feeType.includes('業務委託料')?`<div class="fld"><label for="e_ipay">業務委託料の支払者</label><input id="e_ipay" data-edit="itakuPayer" value="${esc(d.itakuPayer||d.buyer)}"></div><div class="fld"><label for="e_iamt">業務委託料（税込・円）</label><input id="e_iamt" type="number" data-edit="itakuIn" value="${+d.itakuIn||0}"></div>`:''}</div>`:''}
+    <div class="doctabs">${g.map(([k,l])=>`<button data-act="doctab" data-k="${k}" aria-pressed="${k===tab}">${l}${(d.gen||{})[k]?' ✓':''}</button>`).join('')}</div>
+    <div class="paperwrap">${paper(d,tab)}</div>
+    <div class="row" style="margin-top:14px"><button class="btn" data-act="genpdf" data-k="${tab}">PDFを作成して案件フォルダに保存</button>${d.gen&&typeof d.gen[tab]==='string'?`<a class="lnk small" target="_blank" href="${esc(d.gen[tab])}">作成済みPDFを開く</a>`:''}<button class="btn primary" data-act="advance" ${d.stage!==2?'disabled':''}>${d.type==='rent'?'入居・入金が完了した':'決済・引渡が完了した'} → 完了報告へ</button></div>`}
+  if(s===3){return`<div class="row spread"><h2>${d.type==='rent'?'入居完了報告':'決済完了報告'}</h2></div>
+    <p class="muted small" style="margin-top:-6px">署名・押印済みの書類や振込控えをアップロードします。</p>
+    ${checklist(d,'決済')}
+    <div class="row" style="margin-top:16px"><button class="btn primary" data-act="report2" ${d.stage!==3?'disabled':''}>完了報告を申請</button>${missing(d,'決済').length?`<span class="small" style="color:var(--bad)">必須書類があと${missing(d,'決済').length}点必要です</span>`:''}</div>`}
+  if(s===4){const docs=docsFor(d);const miss=missing(d);
+    return`<h2>書類保管（Google Drive）</h2>
+    <p class="small"><a class="lnk" target="_blank" href="${esc(d.folderUrl||'#')}">案件フォルダを開く</a>（${d.type==='rent'?'賃貸':'売買'} / ${esc((d.contractDate||'')+'_'+d.name)}）</p>
+    <div class="tree">${docs.map(x=>{const f=(d.files||{})[x.k];if(!f&&!x.req)return'';return`<div class="f ${f?'':'miss'}">${icoFile()}<span class="name">${f?`<a class="lnk" target="_blank" href="${esc((d.fileLinks||{})[x.k]||'#')}">${esc(f)}</a>`:x.no+x.n}</span>${f?'':'<span class="pill bad">不足</span>'}</div>`}).join('')}
+    ${Object.entries(d.gen||{}).map(([k,u])=>typeof u==='string'?`<div class="f">${icoFile()}<span class="name"><a class="lnk" target="_blank" href="${esc(u)}">作成した書類（${esc(k)}）</a></span></div>`:'').join('')}</div>
+    ${miss.length?`<div class="alert bad" style="margin-top:14px"><div class="t">宅建業法・犯収法上で保管が必要な書類が <b>${miss.length}点</b> 不足しています：${miss.map(x=>x.no+x.n).join('、')}</div></div>${checklistFor(d,miss)}`:'<div class="alert" style="margin-top:14px"><div class="t">必須書類はすべて揃っています。</div></div>'}
+    <div class="row" style="margin-top:14px"><button class="btn primary" data-act="store" ${d.stage!==4?'disabled':''}>保管を確定</button></div>`}
+  if(s===5){return`<h2>歩合請求</h2><p class="muted small" style="margin-top:-6px">${isAdmin()?'エージェント情報と歩合率から自動作成されます。':'登録済みの請求者情報から自動作成されます。'}</p>
+    <div class="paperwrap">${invoice(d)}</div>
+    <div class="row" style="margin-top:14px"><button class="btn primary" data-act="claim" ${d.stage!==5?'disabled':''}>${d.stage>5?'申請済み':'この内容で請求書を申請'}</button>${d.invoiceUrl?`<a class="lnk small" target="_blank" href="${esc(d.invoiceUrl)}">請求書PDFを開く</a>`:''}${isAdmin()?'<button class="btn" data-act="view" data-v="agents">歩合率・請求者情報を編集</button>':''}</div>`}
+  return'';
+}
+function checklistFor(d,list){return`<div class="checklist" style="margin-top:10px">${list.map(x=>`<div class="ck miss"><div class="no">${x.no}</div><div><div class="nm">${x.n}</div><div class="fn">不足</div></div><label class="btn sm">アップロード<input type="file" data-up="${x.k}" accept=".pdf,image/*"></label></div>`).join('')}</div>`}
+const icoFolder=()=>`<svg class="ico" viewBox="0 0 16 16"><path d="M1.5 3.5h5l1.5 1.5h6.5v8h-13z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>`;
+const icoFile=()=>`<svg class="ico" viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9z M9.5 1.5v3h3" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>`;
+const icoSheet=()=>`<svg class="ico" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M2.5 6.5h11M2.5 10h11M6.5 2.5v11" stroke="currentColor" stroke-width="1"/></svg>`;
+
+/* ---------- 書類プレビュー ---------- */
+function issuer(){return`<div class="iss">${jd(UI.docDate||todayStr())}<br>${COMPANY.addr}<br><b>${COMPANY.name}</b><br>${COMPANY.rep}<br>宅地建物取引業免許 ${COMPANY.license}</div><div class="hanko">株式会社<br>sIgNaL<br>之印</div>`}
+function paper(d,k){
+  const tx=taxSplit(d);const rev=revenue(d);
+  if(k==='receipt'){
+    const fb=feeBreakdown(d);const pin=d.type==='rent'?fb.brokerIn:fb.perIn,per=exTax(pin);
+    const to=d.type==='rent'?d.buyer:(d.side==='売主側'?d.seller:d.buyer);
+    return`<div class="paper"><h4>領収書</h4><div class="to">${esc(to)} 様</div>
+    <div class="amt">金 ${fmt(pin)} 円也</div><div>但し　${esc(d.name)}　${d.type==='rent'?'賃貸借':'売買'}の媒介報酬として</div>
+    <table style="margin-top:12px;width:60%"><tr><th>税抜金額</th><td style="text-align:right">${yen(per)}</td></tr><tr><th>消費税（10%）</th><td style="text-align:right">${yen(pin-per)}</td></tr></table>
+    <div class="note">登録番号 T〇〇〇〇〇〇〇〇〇〇〇〇〇（サンプル）${d.side==='両手'?'<br>※両手取引のため、売主様宛にも同額の領収書を作成します。':''}</div>${issuer()}</div>`}
+  if(k==='itakuinv'||k==='itakurcpt'){
+    const ain=+d.itakuIn||0,amt=exTax(ain),atx=ain-amt;const to=d.itakuPayer||d.buyer;
+    if(k==='itakurcpt')return`<div class="paper"><h4>領収書</h4><div class="to">${esc(to)} 様</div>
+    <div class="amt">金 ${fmt(ain)} 円也</div><div>但し　${esc(d.name)}　に係る業務委託料として</div>
+    <table style="margin-top:12px;width:60%"><tr><th>税抜金額</th><td style="text-align:right">${yen(amt)}</td></tr><tr><th>消費税（10%）</th><td style="text-align:right">${yen(atx)}</td></tr></table>
+    <div class="note">登録番号 T〇〇〇〇〇〇〇〇〇〇〇〇〇（サンプル）</div>${issuer()}</div>`;
+    return`<div class="paper"><h4>請求書</h4><div class="to">${esc(to)} 御中</div><p>業務委託契約に基づき、下記のとおりご請求申し上げます。</p>
+    <table style="width:100%"><tr><th style="width:30%">件名</th><td>${esc(d.name)}　業務委託料</td></tr><tr><th>物件所在</th><td>${esc(d.location)}</td></tr><tr><th>税抜金額</th><td style="text-align:right">${yen(amt)}</td></tr><tr><th>消費税（10%）</th><td style="text-align:right">${yen(atx)}</td></tr><tr class="tot"><th>ご請求額（税込）</th><td style="text-align:right">${yen(ain)}</td></tr><tr><th>お支払期日</th><td>${jd(d.settleDate)}（決済日）</td></tr><tr><th>お振込先</th><td>${COMPANY.bank}</td></tr></table>
+    <div class="note">登録番号 T〇〇〇〇〇〇〇〇〇〇〇〇〇（サンプル）</div>${issuer()}</div>`}
+  if(k==='handover'){
+    return`<div class="paper"><h4>引渡確認書</h4><p>${esc(d.type==='buy'?COMPANY.name:d.buyer)}（以下「買主」）は、${esc(d.seller)}（以下「売主」）との間で ${jd(d.contractDate)} 付で締結した不動産売買契約に基づき、下記不動産の引渡しを本日受けたことを確認します。</p>
+    <table style="width:100%"><tr><th style="width:28%">所在</th><td>${esc(d.location)}</td></tr><tr><th>種類</th><td>${esc(d.kind)}</td></tr><tr><th>面積</th><td>${esc(d.area)}</td></tr><tr><th>売買代金</th><td>${yen(d.price)}</td></tr><tr><th>引渡日</th><td>${jd(d.settleDate)}</td></tr><tr><th>鍵・書類</th><td>鍵　　本／関係書類一式</td></tr></table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px;font-size:12.5px"><div>売主　住所<br><br>　　　氏名　　　　　　　　　　印</div><div>買主　住所<br><br>　　　氏名　　　　　　　　　　印</div></div>
+    <div class="note">立会人：${COMPANY.name}　${esc(agentName(d.agent))}</div></div>`}
+  if(k==='seisan'){
+    return`<div class="paper"><h4>固定資産税等精算書</h4><table style="width:100%">
+    <tr><th style="width:40%">令和8年度 年税額</th><td style="text-align:right">${yen(tx.tax)}</td></tr>
+    <tr><th>起算日</th><td>${tx.start?jd(`${tx.start.getFullYear()}-${String(tx.start.getMonth()+1).padStart(2,'0')}-01`):'—'}（${d.taxStart}起算）</td></tr>
+    <tr><th>引渡日</th><td>${jd(d.settleDate)}</td></tr>
+    <tr><th>買主負担日数</th><td style="text-align:right">${tx.days}日 ／ ${tx.total}日</td></tr>
+    <tr class="tot"><th>買主負担額（売主へ支払）</th><td style="text-align:right">${yen(tx.buyer)}</td></tr>
+    <tr><th>売主負担額</th><td style="text-align:right">${yen(tx.tax-tx.buyer)}</td></tr></table>
+    <div class="note">計算式：${fmt(tx.tax)} × ${tx.days} ÷ ${tx.total}（1円未満四捨五入）。日割り方法・起算日は契約書の定めに従います。</div>${issuer()}</div>`}
+  if(k==='kishu'){
+    const rem=(+d.price||0)-(+d.deposit||0);const fee=d.type==='sale'&&hasBroker(d)?feeBreakdown(d).perIn:0;
+    const rows=[['売買代金 残代金',`${yen(d.price)} − 手付金 ${yen(d.deposit)}`,rem,d.type==='buy'?'売主様口座':'売主様口座',d.sellerBank],
+      ['固定資産税等精算金','精算書のとおり',tx.buyer,'売主様口座',d.sellerBank],
+      ...(fee?[['仲介手数料（税込）',d.side==='両手'?'買主様ご負担分':'当社報酬',fee,COMPANY.name,COMPANY.bank]]:[]),
+      ...(d.type==='sale'&&d.feeType.includes('業務委託料')&&(+d.itakuIn||0)?[['業務委託料（税込）',`${esc(d.itakuPayer||d.buyer)} ご負担`,+d.itakuIn,COMPANY.name,COMPANY.bank]]:[]),
+      ...(+d.judicial?[['登記費用','司法書士見積',+d.judicial,'司法書士','当日ご案内']]:[])];
+    const tot=rows.reduce((s,r)=>s+r[2],0);
+    return`<div class="paper"><h4>決済金種一覧</h4><div style="margin-bottom:8px">${esc(d.name)}　決済日 ${jd(d.settleDate)}　${d.type==='buy'?'支払者：'+COMPANY.name:'買主様ご用意分'}</div>
+    <table style="width:100%"><tr><th>項目</th><th>内訳</th><th style="text-align:right">金額</th><th>振込先</th></tr>
+    ${rows.map(r=>`<tr><td>${r[0]}</td><td style="font-size:12px">${r[1]}</td><td style="text-align:right;white-space:nowrap">${yen(r[2])}</td><td style="font-size:12px">${esc(r[3])}<br>${esc(r[4])}</td></tr>`).join('')}
+    <tr class="tot"><td colspan="2">合計</td><td style="text-align:right;white-space:nowrap">${yen(tot)}</td><td></td></tr></table>
+    <div class="note">管理費・修繕積立金・賃料等の精算がある場合は行を追加します。</div></div>`}
+  if(k==='adinv'){
+    const ad=(+d.rent||0)*(+d.adRate||0)/100;
+    return`<div class="paper"><h4>請求書</h4><div class="to">${esc(d.otherBroker||d.seller)} 御中</div><p>下記のとおり広告料（AD）をご請求申し上げます。</p>
+    <table style="width:100%"><tr><th>物件</th><td>${esc(d.location)}</td></tr><tr><th>契約日</th><td>${jd(d.contractDate)}</td></tr><tr><th>賃料</th><td>${yen(d.rent)}</td></tr><tr><th>広告料</th><td>${ad?`賃料の${d.adRate}%　${yen(ad)}（税別）`:'ADなし'}</td></tr><tr class="tot"><th>ご請求額（税込）</th><td>${yen(ad*1.1)}</td></tr><tr><th>お振込先</th><td>${COMPANY.bank}</td></tr></table>${issuer()}</div>`}
+  return'';
+}
+function invoice(d){
+  const p=payout(d),a=p.agent;
+  return`<div class="paper"><h4>請求書</h4>
+  <div style="display:flex;justify-content:space-between;gap:20px"><div><div class="to">${COMPANY.name} 御中</div><div style="font-size:12.5px">${COMPANY.addr}</div></div>
+  <div style="text-align:right;font-size:12.5px">請求番号 INV-${d.id}<br>請求日 ${jd(d.settleDate)}（${d.type==='rent'?'入居日':'決済日'}）<br>お支払期日 ${(()=>{const raw=addDays(d.settleDate,PAYDAYS),due=nextBiz(raw);return jd(due)+(due!==raw?`<br><span style="font-size:11px">（${jd(raw)}が土日祝のため翌営業日）</span>`:'')})()}</div></div>
+  <div class="amt">ご請求金額　${yen(p.total)}</div>
+  ${(()=>{const A=isAdmin(),cs=A?3:1;const R=(l,v)=>`<tr><td colspan="${cs}">${l}</td><td style="text-align:right">${v}</td></tr>`;return`<table style="width:100%"><tr><th>件名</th>${A?'<th style="text-align:right">会社売上（税込）</th><th style="text-align:right">歩合率</th>':''}<th style="text-align:right">金額</th></tr>
+  <tr><td>${esc(d.name)}　業務報酬（歩合）<br><span style="font-size:11.5px">${TYPE[d.type]}・${d.type==='rent'?'入居':'決済'} ${jd(d.settleDate)}</span></td>${A?`<td style="text-align:right">${yen(p.revIn)}</td><td style="text-align:right">${p.rate}%</td>`:''}<td style="text-align:right">${yen(p.gross)}</td></tr>
+  ${p.reg?'':R(`消費税相当額の控除（${p.note}）`,`△${yen(p.deduct)}`)}
+  <tr class="tot"><td colspan="${cs}">${p.reg?'合計（税込）':'合計（お支払額）'}</td><td style="text-align:right">${yen(p.total)}</td></tr>
+  ${p.reg?R('うち消費税（10%対象）',yen(p.tax)):''}</table>`})()}
+  <div style="margin-top:20px;font-size:12.5px;line-height:1.8">【請求者】<br>${esc(a.addr)}<br><b style="font-size:14px">${a.company?esc(a.company)+'</b><br>'+esc(a.signer||('代表 '+a.name)):esc(a.name)+'</b>'}　印<br>TEL ${esc(a.tel)}　${esc(a.mail)}<br>${a.invoiceNo?'登録番号 '+esc(a.invoiceNo)+'<br>':(isReg(a)?'登録番号（要入力）<br>':'')}振込先：${esc(a.bank)}</div></div>`;
+}
+
+/* ---------- 台帳・エージェント ---------- */
+function vLedger(){
+  return`<div class="row spread"><h1>契約台帳（宅建業法 第49条 帳簿）</h1><span class="pill">スプレッドシート連携イメージ</span></div>
+  <div class="note-box">契約報告の申請時に1行ずつ自動記帳されます。帳簿は事務所ごとに備え付け、各事業年度末に閉鎖し、閉鎖後5年間（当社が自ら売主となる新築住宅は10年間）保存します。</div>
+  <section class="panel"><div class="tbl"><table><thead><tr><th>No.</th><th>取引年月日</th><th>物件所在</th><th>種類</th><th>面積</th><th>取引態様</th><th>売主・貸主</th><th>買主・借主</th><th>関与した他業者</th><th class="num">価格・賃料</th><th class="num">報酬額</th><th>担当</th><th>特約等</th></tr></thead>
+  <tbody>${S.ledger.map((r,i)=>({r,i})).filter(({r})=>isAdmin()||(S.deals.find(d=>d.id===r.dealId)||{}).agent===ROLE).map(({r,i},j)=>`<tr class="click" data-act="open" data-id="${r.dealId}"><td>${isAdmin()?i+1:j+1}</td><td>${jd(r.date)}</td><td>${esc(r.location)}</td><td>${esc(r.kind)}</td><td>${esc(r.area)}</td><td>${esc(r.mode)}</td><td>${esc(r.seller)}</td><td>${esc(r.buyer)}</td><td>${esc(r.other)}</td><td class="num">${esc(r.price)}</td><td class="num">${esc(r.fee)}</td><td>${esc(r.agent)}</td><td>${esc(r.special)}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+function vAgents(){
+  const inp=(a,f,w,t='text')=>`<input class="inline-edit" style="width:${w}px;text-align:${t==='number'?'right':'left'}" type="${t}" id="${f}_${a.id}" data-agent="${a.id}" data-f="${f}" value="${esc(a[f]??'')}" aria-label="${esc(a.name)} ${f}">`;
+  const chk=(a,f,l)=>`<input type="checkbox" id="${f}_${a.id}" data-agent="${a.id}" data-f="${f}" ${a[f]?'checked':''} aria-label="${esc(a.name)} ${l}">`;
+  return`<div class="row spread"><h1>エージェント・歩合</h1><a class="lnk small" target="_blank" href="https://docs.google.com/spreadsheets/d/${esc((UI.links||{}).db||'')}/edit">データベース（スプレッドシート）を開く</a></div>
+  <div class="note-box">歩合＝会社売上（税込）× 歩合率（売買・賃貸で別々に設定可）。インボイス登録ありはその額を支払い、未登録は消費税相当額（÷1.1）を差し引きます。「特例」は経過措置に合わせて会社が控除できない分だけを差し引きます（暦年の歩合1,000万円まで）。ログインにはメールアドレスとパスコードが必要です。パスコードは「発行」ボタンで設定し、本人に伝えてください。</div>
+  <section class="panel"><div class="tbl"><table><thead><tr><th>氏名</th><th>メール（ログインID）</th><th>有効</th><th>ログイン</th><th class="num">売買</th><th class="num">賃貸</th><th>インボイス</th><th>特例</th><th>請求名義（法人）</th><th>署名</th><th>登録番号</th><th>宅建士</th><th>住所</th><th>電話</th><th>振込先</th></tr></thead>
+  <tbody>${S.agents.map(a=>`<tr><td>${inp(a,'name',120)}${a.role==='管理者'?' <span class="pill">管理者</span>':''}</td><td>${inp(a,'email',190,'email')}</td><td>${chk(a,'active','有効')}</td><td><button class="btn sm" data-act="setpass" data-id="${a.id}">${a.hasPass?'再発行':'発行'}</button></td><td class="num">${inp(a,'rate',56,'number')}%</td><td class="num">${inp(a,'rateRent',56,'number')}%</td><td>${chk(a,'registered','インボイス登録')}</td><td>${chk(a,'special','特例')}</td><td>${inp(a,'company',170)}</td><td>${inp(a,'signer',170)}</td><td>${inp(a,'invoiceNo',140)}</td><td>${chk(a,'takken','宅建士')}</td><td>${inp(a,'addr',200)}</td><td>${inp(a,'tel',120)}</td><td>${inp(a,'bank',220)}</td></tr>`).join('')}</tbody></table></div></section>
+  <form class="panel" id="addAgentForm"><h2>エージェントを追加</h2><div class="form">
+    <div class="fld"><label for="na_name">氏名</label><input id="na_name" required></div>
+    <div class="fld"><label for="na_email">メール</label><input id="na_email" type="email"></div>
+    <div class="fld"><label for="na_rate">売買歩合（%）</label><input id="na_rate" type="number" value="80"></div>
+    <div class="fld"><label for="na_rent">賃貸歩合（%）</label><input id="na_rent" type="number" value="80"></div>
+    <div class="fld"><label class="chk"><input type="checkbox" id="na_reg"> インボイス登録あり</label><label class="chk"><input type="checkbox" id="na_tk"> 宅建士</label></div>
+  </div><div class="row" style="margin-top:12px"><button class="btn primary" type="submit">追加する</button></div></form>`;
+}
+/* ---------- 描画とイベント ---------- */
+function render(){
+  renderNav();const app=document.getElementById('app');
+  app.innerHTML=UI.view==='dash'?vDash():UI.view==='deals'?vDeals():UI.view==='new'?vNew():UI.view==='deal'?vDeal():UI.view==='ledger'?vLedger():UI.view==='sales'?vSales():isAdmin()?vAgents():vDash();
+  if(UI.view==='deal'&&!deal()){UI.view='dash';app.innerHTML=vDash()}
+  if(UI.view==='new')syncForm();
+}
+async function stage(d,to,msg,html){try{const r=await call('setStage',{id:d.id,to,html});putDeal(r);UI.stageView=null;UI.flagMissing=false;toast(msg);render()}catch(e){if(to===2||to===4)UI.flagMissing=true;render()}}
+document.addEventListener('click',async e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const act=el.dataset.act;const d=deal();
+  if(act==='view'){UI.view=el.dataset.v;window.scrollTo(0,0)}
+  else if(act==='new'){UI.view='new';window.scrollTo(0,0)}
+  else if(act==='open'){UI.view='deal';UI.dealId=el.dataset.id;UI.stageView=null;UI.docTab=null;UI.flagMissing=false;window.scrollTo(0,0)}
+  else if(act==='stage'){UI.stageView=+el.dataset.s;UI.flagMissing=false}
+  else if(act==='doctab'){UI.docTab=el.dataset.k}
+  else if(act==='capfee'){const bf=document.getElementById('f_bfee');bf.value=autoBrokerIn(readForm());bf.dataset.touched='';syncForm();return}
+  else if(act==='logout'){try{await call('logout',{},{quiet:true})}catch(_){}try{localStorage.removeItem('signal-token')}catch(_){}TOKEN=null;location.reload();return}
+  else if(act==='mypass'){UI.view='mypass';renderMyPass();return}
+  else if(act==='setpass'){const p=String(Math.floor(100000+Math.random()*900000));try{await call('setPasscode',{id:el.dataset.id,pass:p});const a=S.agents.find(x=>x.id===el.dataset.id);a.hasPass=true;render();showPass(a,p)}catch(_){}return}
+  else if(act==='advance'){stage(d,d.stage+1,d.stage===0?'契約報告に進みました':'完了報告に進みました');return}
+  else if(act==='report1'){const m=missing(d,'契約');if(m.length){UI.flagMissing=true;toast(`必須書類が不足しています：${m.map(x=>x.n).join('、')}`);render();return}stage(d,2,'契約報告を受け付け、契約台帳に記帳しました');return}
+  else if(act==='genpdf'){const k=el.dataset.k;const lbl=(genDocsFor(d).find(x=>x[0]===k)||[k,k])[1];const html=document.querySelector('.paperwrap .paper').outerHTML;
+    try{const r=await call('makePdf',{id:d.id,key:k,title:lbl,html});putDeal(r);toast('PDFを作成して案件フォルダに保存しました');render()}catch(_){}return}
+  else if(act==='report2'){const m=missing(d,'決済');if(m.length){UI.flagMissing=true;toast(`必須書類が不足しています：${m.map(x=>x.n).join('、')}`);render();return}stage(d,4,'完了報告を受け付けました');return}
+  else if(act==='store'){const m=missing(d);if(m.length){toast(`保管前に不足書類をアップロードしてください（${m.length}点）`);return}stage(d,5,'保管を確定しました');return}
+  else if(act==='claim'){const html=document.querySelector('.paperwrap .paper').outerHTML;stage(d,6,'歩合請求書を申請し、PDFを保存しました',html);return}
+  else return;
+  render();
+});
+function showPass(a,p){const app=document.getElementById('app');const box=document.createElement('div');box.className='alert warn';box.innerHTML=`<div class="t"><b>${esc(a.name)} のパスコード：<span style="font-size:20px;letter-spacing:.1em">${p}</span></b><br>この画面を閉じると再表示できません。本人に伝えてください（ログインIDはメール：${esc(a.email||'未登録')}）。</div><button class="btn sm">閉じる</button>`;box.querySelector('button').onclick=()=>box.remove();app.prepend(box);window.scrollTo(0,0)}
+function renderMyPass(){document.getElementById('app').innerHTML=`<form class="panel login" id="passForm"><h1>パスコード変更</h1>
+  <div class="fld"><label for="mp_old">今のパスコード</label><input id="mp_old" type="password" inputmode="numeric" required></div>
+  <div class="fld"><label for="mp_new">新しいパスコード（6桁以上の数字）</label><input id="mp_new" type="password" inputmode="numeric" pattern="[0-9]{6,}" required></div>
+  <div class="row"><button class="btn primary" type="submit">変更する</button><button class="btn" type="button" data-act="view" data-v="dash">戻る</button></div></form>`}
+let saveTimers={};
+document.addEventListener('change',async e=>{
+  const t=e.target;
+  if(t.dataset.sales){const st=salesState();const k=t.dataset.sales;st[k]=t.value;
+    if(k==='preset'&&t.value!=='custom'){const [a,b]=presetRange(t.value);st.from=a;st.to=b}
+    if(k==='from'||k==='to'){st.preset='custom';if(st.from>st.to)[st.from,st.to]=[st.to,st.from]}
+    render();return}
+  if(t.dataset.up){const d=deal();const f=t.files&&t.files[0];if(!f)return;
+    if(f.size>45*1024*1024){toast('ファイルが大きすぎます（45MBまで）');return}
+    const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(f)});
+    try{const r=await call('upload',{id:d.id,key:t.dataset.up,name:f.name,mime:f.type,b64});putDeal(r);toast(`${f.name} を保存しました`);render()}catch(_){}return}
+  if(t.dataset.edit){const d=deal();const v=t.type==='checkbox'?t.checked:(t.type==='number'?+t.value:t.value);d[t.dataset.edit]=v;render();
+    try{const r=await call('saveDeal',{id:d.id,deal:{[t.dataset.edit]:v}},{quiet:true});putDeal(r);render()}catch(_){}return}
+  if(t.dataset.agent){const a=S.agents.find(x=>x.id===t.dataset.agent);const v=t.type==='checkbox'?t.checked:(t.type==='number'?+t.value:t.value);a[t.dataset.f]=v;
+    try{const r=await call('saveAgent',{id:a.id,[t.dataset.f]:v},{quiet:true});S.agents=r;toast(`${a.name} の情報を保存しました`)}catch(_){}return}
+  if(t.closest('#newForm')){if(t.id==='f_agent'){const a=S.agents.find(x=>x.id===t.value);if(a)document.querySelector(`#newForm input[name=tk][value=${a.takken?'self':'need'}]`).checked=true}syncForm()}
+});
+document.addEventListener('input',e=>{if(e.target.closest('#newForm')){if(e.target.id==='f_bfee')e.target.dataset.touched='1';syncForm()}});
+document.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(e.target.id==='loginForm'){const err=document.getElementById('lg_err');err.textContent='';document.getElementById('busy').hidden=false;
+    try{const r=await apiPost(null,'login',{email:document.getElementById('lg_email').value,pass:document.getElementById('lg_pass').value});
+      if(r.ok){TOKEN=r.data.token;try{localStorage.setItem('signal-token',TOKEN)}catch(_){}boot()}else err.textContent=r.error}
+    catch(x){err.textContent='通信エラー：'+(x&&x.message||x)}finally{document.getElementById('busy').hidden=true}return}
+  if(e.target.id==='passForm'){try{await call('changeMyPass',{oldPass:document.getElementById('mp_old').value,newPass:document.getElementById('mp_new').value});toast('パスコードを変更しました');UI.view='dash';render()}catch(_){}return}
+  if(e.target.id==='addAgentForm'){try{S.agents=await call('addAgent',{name:document.getElementById('na_name').value,email:document.getElementById('na_email').value,rate:document.getElementById('na_rate').value,rateRent:document.getElementById('na_rent').value,registered:document.getElementById('na_reg').checked,takken:document.getElementById('na_tk').checked});toast('追加しました。「発行」でパスコードを設定してください');render()}catch(_){}return}
+  if(e.target.id!=='newForm')return;
+  const v=readForm();if(!v.name||!v.contractDate){toast('案件名と契約予定日を入力してください');return}
+  try{const d=await call('createDeal',v);putDeal(d);UI={...UI,view:'deal',dealId:d.id,stageView:null};toast('契約予定を登録し、案件フォルダを作成しました');render();window.scrollTo(0,0)}catch(_){}
+});
+boot();
+</script>
+
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>

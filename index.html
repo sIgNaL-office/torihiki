@@ -391,6 +391,7 @@ async function boot(){
     S={agents:b.agents,deals:b.deals,ledger:b.ledger};ME=b.me;ROLE=ME.id;COMPANY=b.company;PAYDAYS=b.payDays||7;HOLIDAYS=new Set(b.holidays||[]);UI.links=b.folders;
     document.getElementById('loginWrap').hidden=true;document.getElementById('app').hidden=false;document.querySelector('header.top').hidden=false;
     document.getElementById('who').textContent=ME.name+(ME.isAdmin?'（管理者）':'');render();
+    pullDraft().then(()=>{if(UI.view==='dash')render()});
   }catch(e){}
 }
 /* ---------- ナビ ---------- */
@@ -504,7 +505,7 @@ function vNew(){
   const a=S.agents[0];
   const dr=getDraft();
   return`<div class="row spread"><h1>契約予定の登録</h1><div class="row"><button class="btn" type="button" data-act="draftsave">一時保存</button><button class="btn" data-act="view" data-v="deals">閉じる</button></div></div>
-  ${dr?`<div class="alert" style="margin-bottom:12px"><div class="t">${draftAt(dr)} に一時保存した内容を表示しています。</div><button class="btn sm" type="button" data-act="draftdel">下書きを破棄</button></div>`:'<p class="muted small" style="margin-top:-6px">入力内容はこの端末に自動で一時保存されます。途中で閉じても、続きから入力できます。</p>'}
+  ${dr?`<div class="alert" style="margin-bottom:12px"><div class="t">${draftAt(dr)} に一時保存した内容を表示しています。</div><button class="btn sm" type="button" data-act="draftdel">下書きを破棄</button></div>`:'<p class="muted small" style="margin-top:-6px">入力内容は自動で一時保存されます。途中で閉じても、スマホ・パソコンどちらからでも続きを入力できます。</p>'}
   <form class="panel" id="newForm">
     <h2>取引条件</h2>
     <div class="form">
@@ -738,18 +739,23 @@ function vAgents(){
     <div class="fld"><label class="chk"><input type="checkbox" id="na_reg"> インボイス登録あり</label><label class="chk"><input type="checkbox" id="na_tk"> 宅建士</label></div>
   </div><div class="row" style="margin-top:12px"><button class="btn primary" type="submit">追加する</button></div></form>`;
 }
-/* ---------- 下書き（一時保存）：この端末に保存 ---------- */
+/* ---------- 下書き（一時保存）：サーバーに保存（スマホ⇔パソコンで続きを入力できる）。通信できないときはこの端末にも控えを保存 ---------- */
 const draftKey=()=>'signal-draft-'+(ROLE||'');
-function getDraft(){try{return JSON.parse(localStorage.getItem(draftKey())||'null')}catch(_){return null}}
-function delDraft(){try{localStorage.removeItem(draftKey())}catch(_){}}
-function saveDraft(){const f=document.getElementById('newForm');if(!f)return false;const v={};
+let SDRAFT;/* undefined=未取得, null=なし */
+function localDraft(){try{return JSON.parse(localStorage.getItem(draftKey())||'null')}catch(_){return null}}
+function getDraft(){const l=localDraft();if(SDRAFT===undefined)return l;if(!SDRAFT)return l&&l.pending?l:null;if(l&&l.pending&&l.at>SDRAFT.at)return l;return SDRAFT}
+async function pullDraft(){try{const r=await apiPost(TOKEN,'getDraft',{});if(r&&r.ok){SDRAFT=r.data;const l=localDraft();if(l&&l.pending&&(!SDRAFT||l.at>SDRAFT.at))pushDraft(l)}}catch(_){}}
+async function pushDraft(d){try{const r=await apiPost(TOKEN,'saveDraft',{v:d.v});if(r&&r.ok){SDRAFT=r.data;try{localStorage.setItem(draftKey(),JSON.stringify({...d,pending:false}))}catch(_){}return true}}catch(_){}return false}
+function delDraft(){SDRAFT=null;try{localStorage.removeItem(draftKey())}catch(_){}apiPost(TOKEN,'delDraft',{}).catch(()=>{})}
+function collectDraft(){const f=document.getElementById('newForm');if(!f)return null;const v={};
   f.querySelectorAll('input,select,textarea').forEach(el=>{if(el.type==='radio'){if(el.checked)v['r:'+el.name]=el.value}else if(el.type==='checkbox')v[el.id]=el.checked;else if(el.id)v[el.id]=el.value});
-  try{localStorage.setItem(draftKey(),JSON.stringify({v,at:new Date().toISOString()}));return true}catch(_){return false}}
+  return{v,at:new Date().toISOString(),pending:true}}
+function saveDraftLocal(){const d=collectDraft();if(!d)return null;try{localStorage.setItem(draftKey(),JSON.stringify(d))}catch(_){}return d}
 function restoreDraft(){const dr=getDraft();const f=document.getElementById('newForm');if(!dr||!f)return;
   Object.entries(dr.v).forEach(([k,val])=>{if(k.startsWith('r:')){const r=f.querySelector(`input[name="${k.slice(2)}"][value="${val}"]`);if(r)r.checked=true;return}
     const el=document.getElementById(k);if(!el)return;if(el.type==='checkbox')el.checked=!!val;else el.value=val;if(k==='f_bfee'&&val)el.dataset.touched='1'})}
 const draftAt=dr=>{const t=new Date(dr.at);return`${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`};
-let draftTimer=null;function autoDraft(){clearTimeout(draftTimer);draftTimer=setTimeout(saveDraft,600)}
+let draftTimer=null;function autoDraft(){clearTimeout(draftTimer);draftTimer=setTimeout(()=>{const d=saveDraftLocal();if(d)pushDraft(d)},1500)}
 /* ---------- 描画とイベント ---------- */
 function render(){
   renderNav();const app=document.getElementById('app');
@@ -761,8 +767,10 @@ async function stage(d,to,msg,html){try{const r=await call('setStage',{id:d.id,t
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-act]');if(!el)return;const act=el.dataset.act;const d=deal();
   if(act==='view'){UI.view=el.dataset.v;window.scrollTo(0,0)}
-  else if(act==='new'){UI.view='new';window.scrollTo(0,0)}
-  else if(act==='draftsave'){clearTimeout(draftTimer);if(saveDraft()){toast('一時保存しました。ホーム画面の「下書き」から続きを入力できます');UI.view='dash';window.scrollTo(0,0)}else{toast('一時保存できませんでした');return}}
+  else if(act==='new'){document.getElementById('busy').hidden=false;await pullDraft();document.getElementById('busy').hidden=true;UI.view='new';window.scrollTo(0,0)}
+  else if(act==='draftsave'){clearTimeout(draftTimer);const dd=saveDraftLocal();if(!dd){toast('一時保存できませんでした');return}
+    document.getElementById('busy').hidden=false;const okS=await pushDraft(dd);document.getElementById('busy').hidden=true;
+    toast(okS?'一時保存しました。スマホ・パソコンどちらからでも、ホーム画面の「続きを入力」から再開できます':'通信できないため、この端末に一時保存しました（つながったら自動でサーバーにも保存します）');UI.view='dash';window.scrollTo(0,0)}
   else if(act==='draftdel'){delDraft();toast('下書きを破棄しました');UI.view='new';render();window.scrollTo(0,0);return}
   else if(act==='open'){UI.view='deal';UI.dealId=el.dataset.id;UI.stageView=null;UI.docTab=null;UI.flagMissing=false;window.scrollTo(0,0)}
   else if(act==='stage'){UI.stageView=+el.dataset.s;UI.flagMissing=false}

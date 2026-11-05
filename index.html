@@ -265,6 +265,8 @@ function feeSummary(d){
   if(d.type==='rent'&&fb.ad)p.push(`AD 税別${yen(fb.ad)}`);
   return p.join(' ＋ ')||'報酬額を入力してください';
 }
+/* 東京都の物件か（所在地で判定。他県の記載がなければ東京として扱う） */
+function isTokyo(d){const l=(d.location||'')+' '+(d.name||'');if(/東京/.test(l))return true;return !/(北海道|[^\s]{1,3}[県府])/.test(l)}
 function docsFor(d){
   let L=[];
   const jnote=d.buyerPro?'業者間のため説明不要（交付・記名は必要）':'';
@@ -288,12 +290,14 @@ function docsFor(d){
        {k:'daikin',n:'代金受領書（売主発行）',p:'決済',req:1},{k:'handover',n:'引渡確認書',p:'決済',req:1},
        {k:'seisan',n:'固定資産税等精算書',p:'決済',req:1},{k:'kishu',n:'決済金種一覧',p:'決済',req:0},{k:'furikomi',n:'振込伝票控',p:'決済',req:1}];
   }else{
+    const tk=isTokyo(d),fee=(+d.brokerIn||0)>0,ad=(+d.adRate||0)>0;
     L=[{k:'contract',n:'賃貸借契約書',p:'契約',req:1},{k:'jusetsu',n:'重要事項説明書',p:'契約',req:1,note:jnote},
-       {k:'moshikomi',n:'入居申込書',p:'契約',req:0},{k:'baikai',n:'媒介依頼書',p:'契約',req:0},
-       {k:'tenantId',n:'借主本人確認書類',p:'契約',req:1},
-       {k:'receipt',n:'仲介手数料領収書（控）',p:'決済',req:1},
-       {k:'adinv',n:'AD請求書・入金確認',p:'決済',req:(+d.adRate||0)>0?1:0,why:(+d.adRate||0)>0?'':'ADなし'},
-       {k:'key',n:'鍵引渡確認書',p:'決済',req:1}];
+       {k:'funso',n:'紛争防止条例に基づく説明書',p:'契約',req:tk?1:0,why:tk?'':'東京都外の物件'},
+       {k:'zumen',n:'募集図面（マイソク）',p:'契約',req:1},
+       {k:'moshikomi',n:'申込書',p:'契約',req:1},
+       {k:'tenantId',n:'身分証',p:'契約',req:1},
+       {k:'brokerinv',n:'仲介手数料請求書',p:'契約',req:fee?1:0,why:fee?'':'仲介手数料の請求なし'},
+       {k:'adinv',n:'AD請求書',p:'契約',req:ad?1:0,why:ad?'':'ADなし'}];
   }
   return L.map((x,i)=>({...x,no:CIRC[i]}));
 }

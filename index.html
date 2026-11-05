@@ -297,7 +297,11 @@ function docsFor(d){
        {k:'moshikomi',n:'申込書',p:'契約',req:1},
        {k:'tenantId',n:'身分証',p:'契約',req:1},
        {k:'brokerinv',n:'仲介手数料請求書',p:'契約',req:fee?1:0,why:fee?'':'仲介手数料の請求なし'},
-       {k:'adinv',n:'AD請求書',p:'契約',req:ad?1:0,why:ad?'':'ADなし'}];
+       {k:'adinv',n:'AD請求書',p:'契約',req:ad?1:0,why:ad?'':'ADなし'},
+       {k:'baikai',n:'媒介依頼書',p:'契約',req:0,why:'任意（あれば）'},
+       {k:'other',n:'その他書類',p:'契約',req:0,why:'任意（何点でも追加できます）'},
+       {k:'receipt',n:'仲介手数料領収書（控）',p:'決済',req:0,why:'任意（あれば）'},
+       {k:'key',n:'鍵引渡確認書',p:'決済',req:0,why:'任意（あれば）'}];
   }
   return L.map((x,i)=>({...x,no:CIRC[i]}));
 }
@@ -432,6 +436,7 @@ function vDash(){
   const fwd=agg(L.filter(d=>d.stage<4));
   return`
   <div class="row spread"><h1>${isAdmin()?'ダッシュボード':esc(agentName(ROLE))+' さんのダッシュボード'}</h1><span class="muted small">${jd(todayStr())} 時点</span></div>
+  ${getDraft()?`<div class="alert warn" style="margin-bottom:14px"><div class="t"><b>入力途中の契約予定があります</b>（${draftAt(getDraft())} に一時保存）</div><button class="btn sm primary" data-act="new">続きを入力</button></div>`:''}
   <div class="kpis">
     <div class="kpi"><div class="l">今月の決済予定売上（税別）</div><div class="v">${yen(agg(thisM).all)}</div><div class="s">うち確定 ${yen(agg(thisM).c)}</div></div>
     <div class="kpi"><div class="l">今後の売上見込み</div><div class="v">${yen(fwd.all)}</div><div class="s">契約済 ${yen(fwd.k)}／契約予定 ${yen(fwd.y)}</div></div>
@@ -497,7 +502,9 @@ function vDeals(){return`<div class="row spread"><h1>案件一覧</h1><button cl
 /* ---------- 新規登録 ---------- */
 function vNew(){
   const a=S.agents[0];
-  return`<div class="row spread"><h1>契約予定の登録</h1><button class="btn" data-act="view" data-v="deals">キャンセル</button></div>
+  const dr=getDraft();
+  return`<div class="row spread"><h1>契約予定の登録</h1><div class="row"><button class="btn" type="button" data-act="draftsave">一時保存</button><button class="btn" data-act="view" data-v="deals">閉じる</button></div></div>
+  ${dr?`<div class="alert" style="margin-bottom:12px"><div class="t">${draftAt(dr)} に一時保存した内容を表示しています。</div><button class="btn sm" type="button" data-act="draftdel">下書きを破棄</button></div>`:'<p class="muted small" style="margin-top:-6px">入力内容はこの端末に自動で一時保存されます。途中で閉じても、続きから入力できます。</p>'}
   <form class="panel" id="newForm">
     <h2>取引条件</h2>
     <div class="form">
@@ -529,7 +536,7 @@ function vNew(){
     <div class="form">
       <div class="fld wide"><div class="seg-ctl"><label><input type="radio" name="tk" value="self" ${a.takken?'checked':''}><span>担当者本人が重説・記名する</span></label><label><input type="radio" name="tk" value="need" ${a.takken?'':'checked'}><span>宅建士の手配が必要</span></label></div></div>
     </div>
-    <div class="row" style="margin-top:20px"><button class="btn primary" type="submit">契約予定として登録</button><span class="muted small">登録すると案件の工程管理が始まります。</span></div>
+    <div class="row" style="margin-top:20px"><button class="btn primary" type="submit">契約予定として登録</button><button class="btn" type="button" data-act="draftsave">一時保存</button><span class="muted small">登録すると案件の工程管理が始まります。</span></div>
   </form>`;
 }
 function readForm(){
@@ -563,6 +570,7 @@ function vDeal(){
   const sv=UI.stageView??Math.min(d.stage,5);
   const pv=payout(d);
   return`
+  <p class="small muted" style="margin:0 0 6px">入力した内容とアップロードした書類は、その都度自動で保存されます。途中で閉じても、案件一覧から続きを再開できます。<button class="btn sm" data-act="view" data-v="deals" style="margin-left:6px">一時保存して閉じる</button></p>
   <div class="row spread"><div><div class="small muted">${d.id}・${TYPE[d.type]}・${esc(d.feeType)}${d.side?'・'+esc(d.side):''}</div><h1>${esc(d.name)}</h1></div>
     <div class="row"><button class="btn" data-act="view" data-v="deals">← 一覧</button>${d.stage<6?'':'<span class="pill ok">完了</span>'}</div></div>
   <div class="stepper">${STAGES.map((s,i)=>`<button class="step ${i<d.stage?'done':''} ${i===d.stage?'cur':''} ${i===sv?'sel':''}" data-act="stage" data-s="${i}" ${i>d.stage?'disabled':''}><div class="n">STEP ${i+1}${i<d.stage?' ✓':''}</div><div class="lb">${s}</div></button>`).join('')}</div>
@@ -588,7 +596,7 @@ function checklist(d,phase){
   return`<div class="checklist">${docsFor(d).filter(x=>!phase||x.p===phase).map(x=>{const f=(d.files||{})[x.k];return`<div class="ck ${f?'has':''} ${!f&&x.req&&UI.flagMissing?'miss':''}">
     <div class="no">${x.no}</div><div style="min-width:0"><div class="nm">${x.n} ${x.note?`<span class="small muted">${x.note}</span> `:''}${x.req?'<span class="pill ghost">必須</span>':`<span class="small muted">${x.why||'任意'}</span>`}</div>
     <div class="fn">${f?`保存済：<a class="lnk" target="_blank" href="${esc((d.fileLinks||{})[x.k]||'#')}">${esc(f)}</a>`:'未アップロード'}</div></div>
-    <label class="btn sm">${f?'差し替え':'アップロード'}<input type="file" data-up="${x.k}" accept=".pdf,image/*"></label></div>`}).join('')}</div>`;
+    <label class="btn sm">${f?(x.k==='other'?'追加':'差し替え'):'アップロード'}<input type="file" data-up="${x.k}" accept=".pdf,image/*"></label></div>`}).join('')}</div>`;
 }
 function stagePanel(d,s){
   if(s===0){return`<h2>契約予定</h2>
@@ -730,18 +738,32 @@ function vAgents(){
     <div class="fld"><label class="chk"><input type="checkbox" id="na_reg"> インボイス登録あり</label><label class="chk"><input type="checkbox" id="na_tk"> 宅建士</label></div>
   </div><div class="row" style="margin-top:12px"><button class="btn primary" type="submit">追加する</button></div></form>`;
 }
+/* ---------- 下書き（一時保存）：この端末に保存 ---------- */
+const draftKey=()=>'signal-draft-'+(ROLE||'');
+function getDraft(){try{return JSON.parse(localStorage.getItem(draftKey())||'null')}catch(_){return null}}
+function delDraft(){try{localStorage.removeItem(draftKey())}catch(_){}}
+function saveDraft(){const f=document.getElementById('newForm');if(!f)return false;const v={};
+  f.querySelectorAll('input,select,textarea').forEach(el=>{if(el.type==='radio'){if(el.checked)v['r:'+el.name]=el.value}else if(el.type==='checkbox')v[el.id]=el.checked;else if(el.id)v[el.id]=el.value});
+  try{localStorage.setItem(draftKey(),JSON.stringify({v,at:new Date().toISOString()}));return true}catch(_){return false}}
+function restoreDraft(){const dr=getDraft();const f=document.getElementById('newForm');if(!dr||!f)return;
+  Object.entries(dr.v).forEach(([k,val])=>{if(k.startsWith('r:')){const r=f.querySelector(`input[name="${k.slice(2)}"][value="${val}"]`);if(r)r.checked=true;return}
+    const el=document.getElementById(k);if(!el)return;if(el.type==='checkbox')el.checked=!!val;else el.value=val;if(k==='f_bfee'&&val)el.dataset.touched='1'})}
+const draftAt=dr=>{const t=new Date(dr.at);return`${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`};
+let draftTimer=null;function autoDraft(){clearTimeout(draftTimer);draftTimer=setTimeout(saveDraft,600)}
 /* ---------- 描画とイベント ---------- */
 function render(){
   renderNav();const app=document.getElementById('app');
   app.innerHTML=UI.view==='dash'?vDash():UI.view==='deals'?vDeals():UI.view==='new'?vNew():UI.view==='deal'?vDeal():UI.view==='ledger'?vLedger():UI.view==='sales'?vSales():isAdmin()?vAgents():vDash();
   if(UI.view==='deal'&&!deal()){UI.view='dash';app.innerHTML=vDash()}
-  if(UI.view==='new')syncForm();
+  if(UI.view==='new'){restoreDraft();syncForm()}
 }
 async function stage(d,to,msg,html){try{const r=await call('setStage',{id:d.id,to,html});putDeal(r);UI.stageView=null;UI.flagMissing=false;toast(msg);render()}catch(e){if(to===2||to===4)UI.flagMissing=true;render()}}
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-act]');if(!el)return;const act=el.dataset.act;const d=deal();
   if(act==='view'){UI.view=el.dataset.v;window.scrollTo(0,0)}
   else if(act==='new'){UI.view='new';window.scrollTo(0,0)}
+  else if(act==='draftsave'){clearTimeout(draftTimer);if(saveDraft()){toast('一時保存しました。ホーム画面の「下書き」から続きを入力できます');UI.view='dash';window.scrollTo(0,0)}else{toast('一時保存できませんでした');return}}
+  else if(act==='draftdel'){delDraft();toast('下書きを破棄しました');UI.view='new';render();window.scrollTo(0,0);return}
   else if(act==='open'){UI.view='deal';UI.dealId=el.dataset.id;UI.stageView=null;UI.docTab=null;UI.flagMissing=false;window.scrollTo(0,0)}
   else if(act==='stage'){UI.stageView=+el.dataset.s;UI.flagMissing=false}
   else if(act==='doctab'){UI.docTab=el.dataset.k}
@@ -779,9 +801,9 @@ document.addEventListener('change',async e=>{
     try{const r=await call('saveDeal',{id:d.id,deal:{[t.dataset.edit]:v}},{quiet:true});putDeal(r);render()}catch(_){}return}
   if(t.dataset.agent){const a=S.agents.find(x=>x.id===t.dataset.agent);const v=t.type==='checkbox'?t.checked:(t.type==='number'?+t.value:t.value);a[t.dataset.f]=v;
     try{const r=await call('saveAgent',{id:a.id,[t.dataset.f]:v},{quiet:true});S.agents=r;toast(`${a.name} の情報を保存しました`)}catch(_){}return}
-  if(t.closest('#newForm')){if(t.id==='f_agent'){const a=S.agents.find(x=>x.id===t.value);if(a)document.querySelector(`#newForm input[name=tk][value=${a.takken?'self':'need'}]`).checked=true}syncForm()}
+  if(t.closest('#newForm')){autoDraft();if(t.id==='f_agent'){const a=S.agents.find(x=>x.id===t.value);if(a)document.querySelector(`#newForm input[name=tk][value=${a.takken?'self':'need'}]`).checked=true}syncForm()}
 });
-document.addEventListener('input',e=>{if(e.target.closest('#newForm')){if(e.target.id==='f_bfee')e.target.dataset.touched='1';syncForm()}});
+document.addEventListener('input',e=>{if(e.target.closest('#newForm')){if(e.target.id==='f_bfee')e.target.dataset.touched='1';syncForm();autoDraft()}});
 document.addEventListener('submit',async e=>{
   e.preventDefault();
   if(e.target.id==='loginForm'){const err=document.getElementById('lg_err');err.textContent='';document.getElementById('busy').hidden=false;
@@ -792,7 +814,7 @@ document.addEventListener('submit',async e=>{
   if(e.target.id==='addAgentForm'){try{S.agents=await call('addAgent',{name:document.getElementById('na_name').value,email:document.getElementById('na_email').value,rate:document.getElementById('na_rate').value,rateRent:document.getElementById('na_rent').value,registered:document.getElementById('na_reg').checked,takken:document.getElementById('na_tk').checked});toast('追加しました。「発行」でパスコードを設定してください');render()}catch(_){}return}
   if(e.target.id!=='newForm')return;
   const v=readForm();if(!v.name||!v.contractDate){toast('案件名と契約予定日を入力してください');return}
-  try{const d=await call('createDeal',v);putDeal(d);UI={...UI,view:'deal',dealId:d.id,stageView:null};toast('契約予定を登録し、案件フォルダを作成しました');render();window.scrollTo(0,0)}catch(_){}
+  try{const d=await call('createDeal',v);delDraft();putDeal(d);UI={...UI,view:'deal',dealId:d.id,stageView:null};toast('契約予定を登録し、案件フォルダを作成しました');render();window.scrollTo(0,0)}catch(_){}
 });
 boot();
 </script>

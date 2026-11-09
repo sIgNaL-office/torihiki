@@ -50,8 +50,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .brand{display:flex;align-items:baseline;gap:10px}
 .brand b{font-family:var(--f-doc);font-size:20px;letter-spacing:.02em}
 .brand span{font-size:12px;color:var(--muted)}
+@media (max-width:1400px){.brand span{display:none}}
 nav.tabs{display:flex;gap:4px;flex-wrap:wrap;flex:1}
-nav.tabs button{background:none;border:0;padding:6px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font-weight:500}
+nav.tabs button{white-space:nowrap;background:none;border:0;padding:6px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font-weight:500}
 nav.tabs button[aria-current="true"]{background:var(--navy-soft);color:var(--navy)}
 .btn{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:6px;cursor:pointer;font-weight:500;white-space:nowrap}
 .btn:hover{border-color:var(--navy)}
@@ -124,16 +125,16 @@ tr.click:hover td{background:var(--surface2)}
 .ck input[type=file]{position:absolute;width:1px;height:1px;opacity:0}
 /* form */
 .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 18px}
-.fld{display:grid;gap:4px;min-width:0}
+.fld{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:4px;min-width:0}
 .fld label{font-size:12.5px;color:var(--muted)}
 .fld input,.fld select,.fld textarea{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 10px;width:100%;min-width:0}
 .fld label.chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink);cursor:pointer;width:max-content;max-width:100%;margin-top:2px}
 .fld label.chk input{width:16px;height:16px;padding:0;margin:0;flex:none;accent-color:var(--navy)}
 .unit{position:relative} .unit input{padding-right:34px} .unit span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12.5px}
 .fld.wide{grid-column:1/-1}
-.seg-ctl{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;overflow:hidden;width:max-content;max-width:100%}
-.seg-ctl label{padding:6px 12px;cursor:pointer;font-size:13px;color:var(--ink);border-right:1px solid var(--line)}
-.seg-ctl label:last-child{border-right:0}
+.seg-ctl{display:flex;flex-wrap:wrap;gap:6px;max-width:100%}
+.seg-ctl label{position:relative;padding:6px 12px;cursor:pointer;font-size:13px;line-height:1.4;color:var(--ink);border:1px solid var(--line);border-radius:6px;background:var(--surface);white-space:nowrap}
+.seg-ctl label:has(input:checked){border-color:var(--navy)}
 .seg-ctl input{position:absolute;opacity:0;width:1px;height:1px}
 .seg-ctl input:checked+span{color:var(--navy);font-weight:700}
 .seg-ctl label:has(input:checked){background:var(--navy-soft)}
@@ -235,7 +236,11 @@ function areaOf(kind,land,bldg){const ak=areaKeys(kind);const L=ak.includes('lan
   const t=kind==='土地'?`土地 ${L.toFixed(2)}㎡`:kind==='収益（区分）'?`専有 ${B.toFixed(2)}㎡`:`土地 ${L.toFixed(2)}㎡／建物 ${B.toFixed(2)}㎡`;
   return{landArea:L||null,bldgArea:B||null,area:t}}
 const STAGES=['契約予定','契約報告','決済準備','決済報告','書類保管','歩合請求'];
-const TYPE={sale:'売買仲介',buy:'自社買取',rent:'賃貸仲介'};
+const TYPE={sale:'売買仲介',buy:'自社買取',own:'自社売主',own3:'自社三為売主',rent:'賃貸仲介'};
+const SIDES=['売主側','買主側','両手','売主','買主'];
+const isOwn=d=>d.type==='own'||d.type==='own3';
+/* 自社売主の売却益 ＝ 売買価格 − 仕入価格 − 諸経費 */
+const profitOf=d=>isOwn(d)?(+d.price||0)-(+d.cost||0)-(+d.expense||0):0;
 const CIRC='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
 const fmt=n=>Math.round(+n||0).toLocaleString('ja-JP');
 const yen=n=>'¥'+fmt(n);
@@ -244,15 +249,15 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 /* ---------- 業務ロジック ---------- */
 function brokerFee(p){if(p<=2e6)return p*0.05;if(p<=4e6)return p*0.04+20000;return p*0.03+60000}
 const exTax=v=>Math.round((+v||0)/1.1);
-const hasBroker=d=>d.type==='rent'||(d.feeType||'').includes('仲介手数料');
-const hasItaku=d=>d.type!=='rent'&&(d.feeType||'').includes('業務委託料');
+const hasBroker=d=>d.type==='rent'||(!isOwn(d)&&(d.feeType||'').includes('仲介手数料'));
+const hasItaku=d=>d.type!=='rent'&&!isOwn(d)&&(d.feeType||'').includes('業務委託料');
 const sidesOf=d=>d.type==='sale'&&d.side==='両手'?2:1;
 /* 仲介手数料の上限額（税込・参考） */
 function autoBrokerIn(d){if(d.type==='rent')return Math.round((+d.rent||0)*(+d.feeMonths||1)*1.1);return Math.round(Math.floor(brokerFee(+d.price||0))*sidesOf(d)*1.1)}
 /* 会社売上（税別）＝ 入力された税込額 ÷ 1.1 */
 function revenue(d){
   let r=0;if(hasBroker(d))r+=exTax(d.brokerIn);if(hasItaku(d))r+=exTax(d.itakuIn);
-  if(d.type==='rent')r+=(+d.rent||0)*(+d.adRate||0)/100;return r;
+  if(d.type==='rent')r+=(+d.rent||0)*(+d.adRate||0)/100;r+=profitOf(d);return r;
 }
 function feeBreakdown(d){
   const sides=sidesOf(d);const perIn=Math.round((+d.brokerIn||0)/sides);
@@ -263,6 +268,7 @@ function feeSummary(d){
   if(hasBroker(d))p.push(`仲介手数料 税込${yen(fb.brokerIn)}（税別${yen(exTax(fb.brokerIn))}）`);
   if(hasItaku(d))p.push(`業務委託料 税込${yen(fb.itakuIn)}（税別${yen(exTax(fb.itakuIn))}）`);
   if(d.type==='rent'&&fb.ad)p.push(`AD 税別${yen(fb.ad)}`);
+  if(isOwn(d))p.push(`売却益 ${yen(profitOf(d))}（売買価格 ${yen(d.price)} − 仕入価格 ${yen(d.cost)} − 諸経費 ${yen(d.expense)}）`);
   return p.join(' ＋ ')||'報酬額を入力してください';
 }
 /* 東京都の物件か（所在地で判定。他県の記載がなければ東京として扱う） */
@@ -271,7 +277,7 @@ function docsFor(d){
   let L=[];
   const jnote=d.buyerPro?'業者間のため説明不要（交付・記名は必要）':'';
   if(d.type==='sale'){
-    const b=d.side==='買主側'||d.side==='両手', s=d.side==='売主側'||d.side==='両手';
+    const b=['買主側','両手','買主'].includes(d.side), s=['売主側','両手','売主'].includes(d.side);
     L=[{k:'contract',n:'売買契約書',p:'契約',req:1},{k:'jusetsu',n:'重要事項説明書',p:'契約',req:1,note:jnote},
        {k:'baikai',n:'媒介契約書',p:'契約',req:1},
        ...(d.feeType.includes('業務委託料')?[{k:'itaku',n:'業務委託契約書',p:'契約',req:1}]:[]),
@@ -283,6 +289,19 @@ function docsFor(d){
        ...(d.feeType.includes('業務委託料')?[{k:'itakurcpt',n:'業務委託料領収書（控）',p:'決済',req:1}]:[]),
        {k:'handover',n:'引渡確認書',p:'決済',req:1},
        {k:'seisan',n:'固定資産税等精算書',p:'決済',req:1},{k:'kishu',n:'決済金種一覧',p:'決済',req:0},{k:'furikomi',n:'振込伝票控',p:'決済',req:1}];
+  }else if(isOwn(d)){
+    const t3=d.type==='own3';
+    L=[{k:'contract',n:'売買契約書',p:'契約',req:1},{k:'jusetsu',n:'重要事項説明書',p:'契約',req:1,note:jnote},
+       ...(t3?[{k:'shiire',n:'仕入側 売買契約書（第三者のためにする契約）',p:'契約',req:1},{k:'sellerId',n:'仕入先（元売主）本人確認書類',p:'契約',req:1}]:[]),
+       {k:'buyerId',n:'買主本人確認書類',p:'契約',req:1},
+       {k:'touki',n:'登記事項証明書',p:'契約',req:1},{k:'kokuchi',n:'物件状況報告書・設備表',p:'契約',req:0},
+       {k:'tetsuke',n:'手付金領収書（控）',p:'契約',req:1},
+       {k:'hozen',n:'手付金等の保全措置に関する書類',p:'契約',req:0,why:d.buyerPro?'買主が宅建業者のため不要':'任意（保全が必要な金額の場合）'},
+       {k:'other',n:'その他書類',p:'契約',req:0,why:'任意（何点でも追加できます）'},
+       {k:'daikinR',n:'売買代金領収書（控）',p:'決済',req:1},
+       ...(t3?[{k:'shiirePay',n:'仕入代金の支払控',p:'決済',req:1}]:[]),
+       {k:'handover',n:'引渡確認書',p:'決済',req:1},
+       {k:'seisan',n:'固定資産税等精算書',p:'決済',req:1},{k:'kishu',n:'決済金種一覧',p:'決済',req:0},{k:'furikomi',n:'振込伝票控',p:'決済',req:0}];
   }else if(d.type==='buy'){
     L=[{k:'contract',n:'売買契約書（37条書面）',p:'契約',req:1},{k:'sellerId',n:'売主本人確認書類',p:'契約',req:1},
        {k:'touki',n:'登記事項証明書',p:'契約',req:1},{k:'kokuchi',n:'物件状況報告書・設備表',p:'契約',req:0},
@@ -307,7 +326,7 @@ function docsFor(d){
 }
 function genDocsFor(d){
   if(d.type==='sale')return[...(d.feeType.includes('仲介手数料')?[['receipt','仲介手数料 領収書']]:[]),...(d.feeType.includes('業務委託料')?[['itakuinv','業務委託料 請求書'],['itakurcpt','業務委託料 領収書']]:[]),['handover','引渡確認書'],['seisan','固都税精算書'],['kishu','決済金種一覧']];
-  if(d.type==='buy')return[['handover','引渡確認書'],['seisan','固都税精算書'],['kishu','決済金種一覧']];
+  if(d.type==='buy'||isOwn(d))return[['handover','引渡確認書'],['seisan','固都税精算書'],['kishu','決済金種一覧']];
   return[['receipt','領収書'],['adinv','AD請求書']];
 }
 function taxSplit(d){
@@ -321,12 +340,12 @@ function taxSplit(d){
 function ledgerRow(d,agents){
   const a=agents.find(x=>x.id===d.agent);
   return{dealId:d.id,date:d.contractDate,location:d.location,kind:d.kind,area:d.area,
-    mode:d.type==='buy'?'自ら売買（買主）':(d.type==='rent'?'貸借の媒介':'売買の媒介')+(d.side?`（${d.side}）`:''),
+    mode:d.type==='own'?'自ら売買（売主）':d.type==='own3'?'自ら売買（売主・第三者のためにする契約）':d.type==='buy'?'自ら売買（買主）':(d.type==='rent'?'貸借の媒介':'売買の媒介')+(d.side?`（${d.side}）`:''),
     seller:d.seller+(d.sellerPro?'【宅建業者】':''),buyer:d.buyer+(d.buyerPro?'【宅建業者】':''),other:d.otherBroker,price:d.type==='rent'?`賃料 ${yen(d.rent)}/月`:yen(d.price),
     fee:yen(revenue(d))+'（税別）',agent:a?a.name:'',special:d.special||'',settle:d.settleDate};
 }
 /* 会社売上（税込）＝ 仲介手数料（税込）＋ 業務委託料（税込）＋ AD（税込） */
-function revenueIn(d){let r=0;if(hasBroker(d))r+=+d.brokerIn||0;if(hasItaku(d))r+=+d.itakuIn||0;if(d.type==='rent')r+=Math.round((+d.rent||0)*(+d.adRate||0)/100*1.1);return r}
+function revenueIn(d){let r=0;if(hasBroker(d))r+=+d.brokerIn||0;if(hasItaku(d))r+=+d.itakuIn||0;if(d.type==='rent')r+=Math.round((+d.rent||0)*(+d.adRate||0)/100*1.1);r+=profitOf(d);return r}
 /* 歩合：会社売上（税込）× 歩合率。登録番号ありはその額（税込）を支払。未登録は消費税相当を除いた額（÷1.1）を支払 */
 const rateOf=(a,d)=>a?(d.type==='rent'&&a.rateRent!=null&&a.rateRent!==''?+a.rateRent:+a.rate):0;
 const isReg=a=>!!(a&&(a.registered||a.invoiceNo));
@@ -510,16 +529,18 @@ function vNew(){
     <h2>取引条件</h2>
     <div class="form">
       <div class="fld wide"><label for="f_name">案件名（物件名）</label><input id="f_name" required value="" placeholder="例：武蔵中原ガーデンハウス404"></div>
-      <div class="fld"><label>取引種別</label><div class="seg-ctl">${Object.entries(TYPE).map(([k,l],i)=>`<label><input type="radio" name="type" value="${k}" ${i===0?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
-      <div class="fld" data-for="sale buy"><label>報酬形態</label><div class="seg-ctl"><label><input type="radio" name="feeType" value="仲介手数料" checked><span>仲介手数料</span></label><label><input type="radio" name="feeType" value="業務委託料"><span>業務委託料</span></label><label><input type="radio" name="feeType" value="仲介手数料＋業務委託料"><span>仲介手数料＋業務委託料</span></label></div></div>
-      <div class="fld" data-for="sale"><label>当社の立場</label><div class="seg-ctl">${['売主側','買主側','両手'].map((s,i)=>`<label><input type="radio" name="side" value="${s}" ${i===2?'checked':''}><span>${s}</span></label>`).join('')}</div></div>
+      <div class="fld wide"><label>取引種別</label><div class="seg-ctl">${Object.entries(TYPE).map(([k,l],i)=>`<label><input type="radio" name="type" value="${k}" ${i===0?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
+      <div class="fld wide" data-for="sale buy"><label>報酬形態</label><div class="seg-ctl"><label><input type="radio" name="feeType" value="仲介手数料" checked><span>仲介手数料</span></label><label><input type="radio" name="feeType" value="業務委託料"><span>業務委託料</span></label><label><input type="radio" name="feeType" value="仲介手数料＋業務委託料"><span>仲介手数料＋業務委託料</span></label></div></div>
+      <div class="fld wide" data-for="sale buy own own3"><label>当社の立場</label><div class="seg-ctl">${SIDES.map((s,i)=>`<label><input type="radio" name="side" value="${s}" ${i===2?'checked':''}><span>${s}</span></label>`).join('')}</div></div>
       <div class="fld"><label for="f_agent">担当エージェント</label><select id="f_agent">${(isAdmin()?S.agents:S.agents.filter(x=>x.id===ROLE)).map(x=>`<option value="${x.id}" ${ROLE===x.id?'selected':''}>${esc(x.name)}${isAdmin()?`（歩合${x.rate}%${x.rateRent!=x.rate?'・賃貸'+x.rateRent+'%':''}${x.takken?'・宅建士':''}）`:(x.takken?'（宅建士）':'')}</option>`).join('')}</select></div>
       <div class="fld wide"><label for="f_loc">物件所在地</label><input id="f_loc" value=""></div>
       <div class="fld"><label for="f_kind">種別</label><select id="f_kind">${KINDS.map(k=>`<option ${k==='収益（区分）'?'selected':''}>${k}</option>`).join('')}</select></div>
       <div class="fld" data-area="land"><label for="f_land">土地面積</label><div class="unit"><input id="f_land" type="number" step="0.01" value=""><span>㎡</span></div></div>
       <div class="fld" data-area="bldg"><label for="f_bldg" id="l_bldg">建物面積</label><div class="unit"><input id="f_bldg" type="number" step="0.01" value=""><span>㎡</span></div></div>
-      <div class="fld" data-for="sale buy"><label for="f_price">売買価格（円）</label><input id="f_price" type="number" value=""></div>
-      <div class="fld" data-for="sale buy"><label for="f_dep">手付金（円）</label><input id="f_dep" type="number" value=""></div>
+      <div class="fld" data-for="sale buy own own3"><label for="f_price">売買価格（円）</label><input id="f_price" type="number" value=""></div>
+      <div class="fld" data-for="sale buy own own3"><label for="f_dep">手付金（円）</label><input id="f_dep" type="number" value=""></div>
+      <div class="fld" data-for="own own3"><label for="f_cost">仕入価格（円）</label><input id="f_cost" type="number" value=""></div>
+      <div class="fld" data-for="own own3"><label for="f_exp">諸経費（円）仲介手数料・登記・税金など</label><input id="f_exp" type="number" value=""></div>
       <div class="fld" data-for="rent"><label for="f_rent">賃料（円／月）</label><input id="f_rent" type="number" value=""></div>
       <div class="fld" data-for="rent"><label for="f_ad">AD（賃料の何%）0ならADなし</label><input id="f_ad" type="number" value="0"></div>
       <div class="fld" data-for="broker"><label for="f_bfee">仲介手数料（税込・円）</label><input id="f_bfee" type="number" value=""><span class="small muted" id="h_bfee"></span></div>
@@ -543,14 +564,18 @@ function vNew(){
 function readForm(){
   const f=document.getElementById('newForm');const g=id=>document.getElementById(id).value;
   const type=f.type.value;
-  return{type,feeType:type==='rent'?'仲介手数料':f.feeType.value,side:type==='sale'?f.side.value:(type==='rent'?'借主側':''),
+  return{type,feeType:type==='rent'?'仲介手数料':isOwn({type})?'売却益':f.feeType.value,side:type==='rent'?'借主側':f.side.value,cost:+g('f_cost'),expense:+g('f_exp'),
     name:g('f_name'),agent:g('f_agent'),location:g('f_loc'),kind:g('f_kind'),...areaOf(g('f_kind'),g('f_land'),g('f_bldg')),price:+g('f_price'),deposit:+g('f_dep'),
     rent:+g('f_rent'),feeMonths:1,adRate:+g('f_ad'),brokerIn:+g('f_bfee'),itakuIn:+g('f_ifee'),contractDate:g('f_cdate'),settleDate:g('f_sdate'),
     seller:g('f_seller'),buyer:g('f_buyer'),sellerPro:document.getElementById('f_sellerPro').checked,buyerPro:document.getElementById('f_buyerPro').checked,otherBroker:g('f_other'),tax:+g('f_tax'),special:g('f_sp'),
     takkenNeeded:f.tk.value==='need'};
 }
+let lastType=null;
 function syncForm(){
-  const f=document.getElementById('newForm');if(!f)return;const d=readForm();
+  const f=document.getElementById('newForm');if(!f)return;
+  {const ty=f.type.value;if(lastType!==null&&ty!==lastType){const want=ty==='buy'?'買主':(ty==='own'||ty==='own3')?'売主':(['売主','買主'].includes(f.side.value)?'両手':null);if(want){const r=f.querySelector(`input[name=side][value="${want}"]`);if(r)r.checked=true}
+    const sl=document.getElementById('f_seller'),by=document.getElementById('f_buyer');if((ty==='own'||ty==='own3')&&!sl.value)sl.value=COMPANY.name;if(ty==='buy'&&!by.value)by.value=COMPANY.name}lastType=ty}
+  const d=readForm();
   const bf=document.getElementById('f_bfee');const cap=autoBrokerIn(d);
   if(!bf.dataset.touched){bf.value=cap;d.brokerIn=cap}
   f.querySelectorAll('[data-for]').forEach(el=>{const k=el.dataset.for.split(' ');el.hidden=!(k.includes(d.type)||(hasBroker(d)&&k.includes('broker'))||(hasItaku(d)&&k.includes('itaku')))});
@@ -562,7 +587,7 @@ function syncForm(){
   const lp=f.querySelectorAll('.lpro');lp[0].textContent=d.type==='rent'?'貸主':'売主';lp[1].textContent=d.type==='rent'?'借主':'買主';
   const t=feeSummary(d);
   const a=S.agents.find(x=>x.id===d.agent);const r=revenue(d);
-  document.getElementById('calc').innerHTML=`<div class="row spread"><div><div class="muted small">会社売上（税別）</div><b>${yen(r)}</b> <span class="small muted">税込 ${yen(r*1.1)}</span><div class="small muted">${t}</div></div>${isAdmin()?`<div style="text-align:right"><div class="muted small">${esc(a.name)} の歩合 ${rateOf(a,d)}%（税込売上 ${yen(payout(d).revIn)} から）</div><b>${yen(payout(d).pay)}</b><div class="small muted">会社取り分（税込） ${yen(payout(d).keep)}</div></div>`:(ROLE===a.id?`<div style="text-align:right"><div class="muted small">自分の歩合（見込み・税込）</div><b>${yen(payout(d).pay)}</b></div>`:'')}</div>`;
+  document.getElementById('calc').innerHTML=`<div class="row spread"><div><div class="muted small">会社売上（税別）</div><b>${yen(r)}</b> ${isOwn(d)?'':`<span class="small muted">税込 ${yen(r*1.1)}</span>`}<div class="small muted">${t}</div></div>${isAdmin()?`<div style="text-align:right"><div class="muted small">${esc(a.name)} の歩合 ${rateOf(a,d)}%（税込売上 ${yen(payout(d).revIn)} から）</div><b>${yen(payout(d).pay)}</b><div class="small muted">会社取り分（税込） ${yen(payout(d).keep)}</div></div>`:(ROLE===a.id?`<div style="text-align:right"><div class="muted small">自分の歩合（見込み・税込）</div><b>${yen(payout(d).pay)}</b></div>`:'')}</div>`;
 }
 
 /* ---------- 案件詳細 ---------- */
@@ -607,10 +632,11 @@ function stagePanel(d,s){
     <p class="muted small">契約が完了したら、契約報告に進んで契約書類をアップロードします。</p>
     <button class="btn primary" data-act="advance" ${d.stage!==0?'disabled':''}>契約が完了した → 契約報告へ</button>`}
   if(s===1){return`<div class="row spread"><h2>契約報告</h2></div>
-    <h3>報酬額の確定（税込で入力）</h3>
+    <h3>${isOwn(d)?'売却益の確定':'報酬額の確定（税込で入力）'}</h3>
     <div class="form" style="margin-bottom:8px">
       ${hasBroker(d)?`<div class="fld"><label for="r_bfee">仲介手数料（税込・円）${sidesOf(d)===2?'　両手・2者分合計':''}</label><input id="r_bfee" type="number" data-edit="brokerIn" value="${+d.brokerIn||0}" ${d.stage!==1?'disabled':''}><span class="small muted">上限 ${yen(autoBrokerIn(d))}</span></div>`:''}
       ${hasItaku(d)?`<div class="fld"><label for="r_ifee">業務委託料（税込・円）</label><input id="r_ifee" type="number" data-edit="itakuIn" value="${+d.itakuIn||0}" ${d.stage!==1?'disabled':''}></div>`:''}
+      ${isOwn(d)?`<div class="fld"><label for="r_price">売買価格（円）</label><input id="r_price" type="number" data-edit="price" value="${+d.price||0}" ${d.stage!==1?'disabled':''}></div><div class="fld"><label for="r_cost">仕入価格（円）</label><input id="r_cost" type="number" data-edit="cost" value="${+d.cost||0}" ${d.stage!==1?'disabled':''}></div><div class="fld"><label for="r_exp">諸経費（円）</label><input id="r_exp" type="number" data-edit="expense" value="${+d.expense||0}" ${d.stage!==1?'disabled':''}></div>`:''}
     </div>
     <div class="calc" style="margin-bottom:16px">会社売上（税別） <b>${yen(revenue(d))}</b><div class="small muted">${feeSummary(d)}</div></div>
     <div class="row" style="margin-bottom:14px"><label class="small"><input type="checkbox" data-edit="sellerPro" id="r_sp" ${d.sellerPro?'checked':''} ${d.stage!==1?'disabled':''}> ${d.type==='rent'?'貸主':'売主'}は宅建業者</label><label class="small"><input type="checkbox" data-edit="buyerPro" id="r_bp" ${d.buyerPro?'checked':''} ${d.stage!==1?'disabled':''}> ${d.type==='rent'?'借主':'買主'}は宅建業者</label></div>
@@ -761,7 +787,7 @@ function render(){
   renderNav();const app=document.getElementById('app');
   app.innerHTML=UI.view==='dash'?vDash():UI.view==='deals'?vDeals():UI.view==='new'?vNew():UI.view==='deal'?vDeal():UI.view==='ledger'?vLedger():UI.view==='sales'?vSales():isAdmin()?vAgents():vDash();
   if(UI.view==='deal'&&!deal()){UI.view='dash';app.innerHTML=vDash()}
-  if(UI.view==='new'){restoreDraft();syncForm()}
+  if(UI.view==='new'){lastType=null;restoreDraft();syncForm()}
 }
 async function stage(d,to,msg,html){try{const r=await call('setStage',{id:d.id,to,html});putDeal(r);UI.stageView=null;UI.flagMissing=false;toast(msg);render()}catch(e){if(to===2||to===4)UI.flagMissing=true;render()}}
 document.addEventListener('click',async e=>{

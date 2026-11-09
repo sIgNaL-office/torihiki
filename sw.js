@@ -1,5 +1,5 @@
 // 画面ファイルだけを保存（取引データは保存しない）。常に最新を優先して取得します。
-const CACHE = 'signal-torihiki-v9';
+const CACHE = 'signal-torihiki-v10';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-a-192.png', './icon-a-512.png', './icon-a-180.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });

@@ -532,7 +532,7 @@ function vNew(){
       <div class="fld wide"><label>取引種別</label><div class="seg-ctl">${Object.entries(TYPE).map(([k,l],i)=>`<label><input type="radio" name="type" value="${k}" ${i===0?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
       <div class="fld wide" data-for="sale buy"><label>報酬形態</label><div class="seg-ctl"><label><input type="radio" name="feeType" value="仲介手数料" checked><span>仲介手数料</span></label><label><input type="radio" name="feeType" value="業務委託料"><span>業務委託料</span></label><label><input type="radio" name="feeType" value="仲介手数料＋業務委託料"><span>仲介手数料＋業務委託料</span></label></div></div>
       <div class="fld wide" data-for="sale buy own own3"><label>当社の立場</label><div class="seg-ctl">${SIDES.map((s,i)=>`<label><input type="radio" name="side" value="${s}" ${i===2?'checked':''}><span>${s}</span></label>`).join('')}</div></div>
-      <div class="fld"><label for="f_agent">担当エージェント</label><select id="f_agent">${(isAdmin()?S.agents:S.agents.filter(x=>x.id===ROLE)).map(x=>`<option value="${x.id}" ${ROLE===x.id?'selected':''}>${esc(x.name)}${isAdmin()?`（歩合${x.rate}%${x.rateRent!=x.rate?'・賃貸'+x.rateRent+'%':''}${x.takken?'・宅建士':''}）`:(x.takken?'（宅建士）':'')}</option>`).join('')}</select></div>
+      <div class="fld"><label for="f_agent">担当エージェント</label><select id="f_agent">${(isAdmin()?S.agents:S.agents.filter(x=>x.id===ROLE)).map(x=>`<option value="${x.id}" ${ROLE===x.id?'selected':''}>${esc(x.name)}${x.takken?'（宅建士）':''}</option>`).join('')}</select></div>
       <div class="fld wide"><label for="f_loc">物件所在地</label><input id="f_loc" value=""></div>
       <div class="fld"><label for="f_kind">種別</label><select id="f_kind">${KINDS.map(k=>`<option ${k==='収益（区分）'?'selected':''}>${k}</option>`).join('')}</select></div>
       <div class="fld" data-area="land"><label for="f_land">土地面積</label><div class="unit"><input id="f_land" type="number" step="0.01" value=""><span>㎡</span></div></div>
@@ -587,7 +587,7 @@ function syncForm(){
   const lp=f.querySelectorAll('.lpro');lp[0].textContent=d.type==='rent'?'貸主':'売主';lp[1].textContent=d.type==='rent'?'借主':'買主';
   const t=feeSummary(d);
   const a=S.agents.find(x=>x.id===d.agent);const r=revenue(d);
-  document.getElementById('calc').innerHTML=`<div class="row spread"><div><div class="muted small">会社売上（税別）</div><b>${yen(r)}</b> ${isOwn(d)?'':`<span class="small muted">税込 ${yen(r*1.1)}</span>`}<div class="small muted">${t}</div></div>${isAdmin()?`<div style="text-align:right"><div class="muted small">${esc(a.name)} の歩合 ${rateOf(a,d)}%（税込売上 ${yen(payout(d).revIn)} から）</div><b>${yen(payout(d).pay)}</b><div class="small muted">会社取り分（税込） ${yen(payout(d).keep)}</div></div>`:(ROLE===a.id?`<div style="text-align:right"><div class="muted small">自分の歩合（見込み・税込）</div><b>${yen(payout(d).pay)}</b></div>`:'')}</div>`;
+  document.getElementById('calc').innerHTML=`<div class="row spread"><div><div class="muted small">会社売上（税別）</div><b>${yen(r)}</b> ${isOwn(d)?'':`<span class="small muted">税込 ${yen(r*1.1)}</span>`}<div class="small muted">${t}</div></div>${isAdmin()?`<div style="text-align:right"><div class="muted small">${esc(a.name)} の歩合（税込売上 ${yen(payout(d).revIn)} から）</div><b>${yen(payout(d).pay)}</b><div class="small muted">会社取り分（税込） ${yen(payout(d).keep)}</div></div>`:(ROLE===a.id?`<div style="text-align:right"><div class="muted small">自分の歩合（見込み・税込）</div><b>${yen(payout(d).pay)}</b></div>`:'')}</div>`;
 }
 
 /* ---------- 案件詳細 ---------- */
